@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as Linking from 'expo-linking';
 
 import { Botao } from '@/components/Botao';
 import { CampoTexto } from '@/components/CampoTexto';
@@ -32,6 +33,7 @@ export default function TelaRecuperarConta() {
     definirCarregando(true);
     const resultado = await api<{ mensagem: string }>('/auth/recuperar-conta', 'POST', {
       email: normalizarEmail(email),
+      redirect_url: Linking.createURL('login/redefinir-senha'),
     });
     definirCarregando(false);
     definirAviso(

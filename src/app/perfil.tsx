@@ -37,6 +37,8 @@ export default function TelaPerfil() {
   const router = useRouter();
   const sessao = useSessao();
   const { tema, preferencia, definirPreferencia } = useTema();
+  const [preferenciaSelecionada, definirPreferenciaSelecionada] =
+    useState<PreferenciaTema>(preferencia);
   const [nome, definirNome] = useState('');
   const [email, definirEmail] = useState('');
   const [erros, definirErros] = useState<{ nome: string | null; email: string | null }>({
@@ -59,7 +61,10 @@ export default function TelaPerfil() {
       }
       definirNome(resultado.dados.nome);
       definirEmail(resultado.dados.email);
-      if (ehPreferenciaTema(resultado.dados.tema)) definirPreferencia(resultado.dados.tema);
+      if (ehPreferenciaTema(resultado.dados.tema)) {
+        definirPreferencia(resultado.dados.tema);
+        definirPreferenciaSelecionada(resultado.dados.tema);
+      }
     });
 
     return () => {
@@ -77,9 +82,12 @@ export default function TelaPerfil() {
     const resultado = await api<Perfil>('/usuarios/me', 'PATCH', {
       nome: nome.trim(),
       email: normalizarEmail(email),
-      tema: preferencia,
+      tema: preferenciaSelecionada,
     });
     definirSalvando(false);
+
+    if (resultado.ok) definirPreferencia(preferenciaSelecionada);
+
     definirAviso(
       resultado.ok
         ? {
@@ -149,8 +157,8 @@ export default function TelaPerfil() {
                 key={opcao.valor}
                 titulo={opcao.titulo}
                 icone={opcao.icone}
-                selecionado={preferencia === opcao.valor}
-                aoTocar={() => definirPreferencia(opcao.valor)}
+                selecionado={preferenciaSelecionada === opcao.valor}
+                aoTocar={() => definirPreferenciaSelecionada(opcao.valor)}
                 desabilitado={salvando}
                 empilhado
                 style={styles.opcaoTema}
