@@ -218,7 +218,12 @@ export default function TelaInicio() {
                 const pendentes = solicitacoes[item._id] ?? 0;
 
                 return (
-                  <Cartao key={item._id} style={styles.cartao}>
+                  <Cartao key={item._id} style={styles.cartao}
+                    rotuloAcessivel={`Ver minhas comissões em ${item.nome}`}
+                    aoTocar={item.status === 'APROVADA' && item.meu_vinculo?.status === 'APROVADO' && !administra(item)
+                      ? () => router.push({ pathname: '/comissoes/minhas', params: { organizacao_id: item._id } })
+                      : undefined}
+                  >
                     <View style={styles.topo}>
                       <View style={[styles.icone, { backgroundColor: cores.primariaSuave }]}>
                         <Ionicons name="business-outline" size={20} color={cores.primaria} />
@@ -235,6 +240,9 @@ export default function TelaInicio() {
                       </Text>
                     ) : null}
 
+                    {item.status === 'APROVADA' && item.meu_vinculo?.status === 'APROVADO' && !administra(item) ? (
+                      <Text style={[styles.texto, { color: cores.primaria }]}>Ver minhas comissões →</Text>
+                    ) : null}
                     {administra(item) ? (
                       <>
                         {pendentes > 0 ? (

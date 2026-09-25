@@ -69,6 +69,7 @@ function Navegacao() {
           <Stack.Screen name="organizacoes/participar" />
           <Stack.Screen name="organizacoes/membros" />
           <Stack.Screen name="comissoes/index" />
+          <Stack.Screen name="comissoes/minhas" />
           <Stack.Screen name="comissoes/nova" />
           <Stack.Screen name="comissoes/[id]" />
         </Stack.Protected>
