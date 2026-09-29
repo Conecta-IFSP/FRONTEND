@@ -75,7 +75,7 @@ export default function TelaCadastro() {
       return;
     }
 
-    router.replace('/login');
+    router.replace({ pathname: '/login/verificar-cadastro', params: { email: normalizarEmail(email) } });
   }
 
   return (

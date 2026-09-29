@@ -52,6 +52,7 @@ function Navegacao() {
         <Stack.Protected guard={!usuario}>
           <Stack.Screen name="login/index" />
           <Stack.Screen name="login/cadastro" />
+          <Stack.Screen name="login/verificar-cadastro" />
           <Stack.Screen name="login/recuperar-conta" />
         </Stack.Protected>
         <Stack.Screen name="login/redefinir-senha" />
