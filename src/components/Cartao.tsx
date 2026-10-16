@@ -1,5 +1,3 @@
-/** Superfície com cantos arredondados e sombra suave, usada para agrupar conteúdo. */
-
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
@@ -9,7 +7,6 @@ import { useTema } from '@/contexts/TemaContext';
 type CartaoProps = {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
-  /** Torna o cartão tocável, como um item de lista que abre outra tela. */
   aoTocar?: () => void;
   rotuloAcessivel?: string;
 };

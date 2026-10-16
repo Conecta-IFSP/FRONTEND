@@ -1,13 +1,9 @@
-/**
- * Tela de participação: organizações aprovadas em que o usuário pode pedir para
- * entrar, com os pedidos pendentes e os recusados separados por filtro.
- */
-
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Botao } from '@/components/Botao';
+import { CampoTexto } from '@/components/CampoTexto';
 import { Carregando } from '@/components/Carregando';
 import { Cartao } from '@/components/Cartao';
 import { EstadoVazio } from '@/components/EstadoVazio';
@@ -51,6 +47,8 @@ const FILTROS: {
   },
 ];
 
+const ATRASO_BUSCA_MS = 350;
+
 function filtroDa(organizacao: Organizacao): Filtro {
   if (!organizacao.meu_vinculo) return 'disponiveis';
   return organizacao.meu_vinculo.status === 'PENDENTE' ? 'pendentes' : 'recusadas';
@@ -63,35 +61,41 @@ export default function TelaParticiparOrganizacao() {
   const [carregando, definirCarregando] = useState(true);
   const [enviandoId, definirEnviandoId] = useState<string | null>(null);
   const [aviso, definirAviso] = useState<Aviso | null>(null);
+  const [busca, definirBusca] = useState('');
+  const [termo, definirTermo] = useState('');
+  const ultimaConsulta = useRef(0);
 
-  useEffect(() => {
-    let ativa = true;
-
-    void api<Organizacao[]>('/organizacoes').then((resultado) => {
-      if (!ativa) return;
-      definirCarregando(false);
-      // Onde o usuário já é membro ou administrador aparece só no início.
-      if (resultado.ok) {
-        definirOrganizacoes(
-          resultado.dados.filter(
-            (org) =>
-              org.status === 'APROVADA' &&
-              (!org.meu_vinculo ||
-                org.meu_vinculo.status === 'PENDENTE' ||
-                org.meu_vinculo.status === 'REJEITADO'),
-          ),
-        );
-      } else {
-        definirAviso({ tom: 'erro', mensagem: resultado.erro });
-      }
-    });
-
-    return () => {
-      ativa = false;
-    };
+  const carregar = useCallback(async (termoBusca: string) => {
+    const consulta = ++ultimaConsulta.current;
+    const resultado = await api<Organizacao[]>(
+      termoBusca ? `/organizacoes?busca=${encodeURIComponent(termoBusca)}` : '/organizacoes',
+    );
+    if (consulta !== ultimaConsulta.current) return;
+    definirCarregando(false);
+    definirTermo(termoBusca);
+    if (resultado.ok) {
+      definirOrganizacoes(
+        resultado.dados.filter(
+          (org) =>
+            org.status === 'APROVADA' &&
+            (!org.meu_vinculo ||
+              org.meu_vinculo.status === 'PENDENTE' ||
+              org.meu_vinculo.status === 'REJEITADO'),
+        ),
+      );
+    } else {
+      definirAviso({ tom: 'erro', mensagem: resultado.erro });
+    }
   }, []);
 
+  useEffect(() => {
+    const termoBusca = busca.trim();
+    const espera = setTimeout(() => void carregar(termoBusca), termoBusca ? ATRASO_BUSCA_MS : 0);
+    return () => clearTimeout(espera);
+  }, [busca, carregar]);
+
   async function solicitar(organizacao: Organizacao) {
+    const novamente = organizacao.meu_vinculo?.status === 'REJEITADO';
     definirEnviandoId(organizacao._id);
     definirAviso(null);
     const resultado = await api(`/organizacoes/${organizacao._id}/membros`, 'POST', {});
@@ -111,7 +115,7 @@ export default function TelaParticiparOrganizacao() {
     );
     definirAviso({
       tom: 'sucesso',
-      titulo: 'Solicitação enviada',
+      titulo: novamente ? 'Pedido enviado novamente' : 'Solicitação enviada',
       mensagem: `O administrador de ${organizacao.nome} vai analisar o pedido. Acompanhe em Pendentes.`,
     });
   }
@@ -120,7 +124,16 @@ export default function TelaParticiparOrganizacao() {
   const lista = organizacoes.filter((org) => filtroDa(org) === filtro);
 
   return (
-    <TelaComCabecalho titulo="Participar de uma organização">
+    <TelaComCabecalho titulo="Participar de uma organização" aoAtualizar={() => carregar(busca.trim())}>
+      <CampoTexto
+        rotulo="Buscar organização"
+        icone="search-outline"
+        value={busca}
+        onChangeText={definirBusca}
+        autoCorrect={false}
+        returnKeyType="search"
+      />
+
       <View style={styles.filtros}>
         {FILTROS.map((opcao) => (
           <Opcao
@@ -139,7 +152,10 @@ export default function TelaParticiparOrganizacao() {
       {carregando ? <Carregando rotulo="Carregando organizações" /> : null}
 
       {!carregando && lista.length === 0 ? (
-        <EstadoVazio icone={atual.icone} mensagem={atual.vazio} />
+        <EstadoVazio
+          icone={termo ? 'search-outline' : atual.icone}
+          mensagem={termo ? `Nenhuma organização encontrada para "${termo}".` : atual.vazio}
+        />
       ) : null}
       {!carregando && lista.length > 0 ? (
         <Text style={[styles.resumo, { color: cores.textoSuave }]}>{atual.resumo(lista.length)}</Text>
@@ -168,6 +184,18 @@ export default function TelaParticiparOrganizacao() {
               tituloCarregando="Enviando..."
               rotuloAcessivel={`Pedir para participar de ${organizacao.nome}`}
               icone="enter-outline"
+              carregando={enviandoId === organizacao._id}
+              aoTocar={() => solicitar(organizacao)}
+              style={styles.botao}
+            />
+          ) : null}
+          {filtro === 'recusadas' ? (
+            <Botao
+              titulo="Pedir novamente"
+              tituloCarregando="Enviando..."
+              rotuloAcessivel={`Pedir de novo para participar de ${organizacao.nome}`}
+              variante="secundario"
+              icone="refresh-outline"
               carregando={enviandoId === organizacao._id}
               aoTocar={() => solicitar(organizacao)}
               style={styles.botao}

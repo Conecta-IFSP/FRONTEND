@@ -1,5 +1,3 @@
-/** Janela de confirmação exibida antes de ações que desativam ou removem dados. */
-
 import { Modal, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -8,7 +6,6 @@ import { ESPACO, RAIO, TIPOGRAFIA } from '@/constants/theme';
 import { useTema } from '@/contexts/TemaContext';
 
 type ConfirmacaoProps = {
-  /** Pergunta exibida; sem mensagem, a janela fica fechada. */
   mensagem?: string;
   confirmar: () => void;
   cancelar: () => void;

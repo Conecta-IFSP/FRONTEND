@@ -1,5 +1,3 @@
-/** Botão só com ícone, para ações em espaços estreitos. O rótulo é lido pelo leitor de tela. */
-
 import { Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -12,7 +10,6 @@ type BotaoIconeProps = {
   aoTocar: () => void;
   variante?: 'secundario' | 'perigo';
   desabilitado?: boolean;
-  /** Explicação extra lida pelo leitor de tela. */
   dica?: string;
 };
 

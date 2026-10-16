@@ -29,7 +29,7 @@ export default function MinhasComissoes() {
     definirErro('');
     definirCarregando(true);
     if (!id) {
-      definirErro('Selecione uma organização na tela inicial.');
+      definirErro('Organização não encontrada.');
       definirCarregando(false);
       return;
     }
@@ -48,9 +48,13 @@ export default function MinhasComissoes() {
       {erro ? <FaixaAviso aviso={{ tom: 'erro', mensagem: erro }} /> : null}
       {dados ? <View style={{ gap: ESPACO.md }}>
         <Text style={[TIPOGRAFIA.subtitulo, { color: cores.texto }]}>{dados.organizacao.nome}</Text>
-        <Text style={[TIPOGRAFIA.corpoPequeno, { color: cores.textoSuave }]}>Comissões desta organização das quais você participa.</Text>
-        {dados.comissoes.length === 0 ? <EstadoVazio icone="people-outline" mensagem="Você ainda não participa de nenhuma comissão nesta organização." /> : null}
-        {dados.comissoes.map((comissao) => <Cartao key={comissao._id} style={{ gap: ESPACO.sm }}>
+        {dados.comissoes.length === 0 ? <EstadoVazio icone="people-outline" mensagem="Você ainda não participa de nenhuma comissão." /> : null}
+        {dados.comissoes.map((comissao) => <Cartao
+          key={comissao._id}
+          style={{ gap: ESPACO.sm }}
+          rotuloAcessivel={`Abrir comissão ${comissao.nome}`}
+          aoTocar={() => router.push({ pathname: '/comissoes/[id]', params: { id: comissao._id } })}
+        >
           <Text style={[TIPOGRAFIA.subtitulo, { color: cores.texto }]}>{comissao.nome}</Text>
           {comissao.descricao ? <Text style={[TIPOGRAFIA.corpoPequeno, { color: cores.textoSuave }]}>{comissao.descricao}</Text> : null}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: ESPACO.sm }}>

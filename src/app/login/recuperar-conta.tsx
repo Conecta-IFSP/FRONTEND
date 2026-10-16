@@ -1,12 +1,11 @@
-/** Tela de recuperação de conta: envia o link temporário de redefinição de senha. */
-
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
+import { useForm } from 'react-hook-form';
 
 import { Botao } from '@/components/Botao';
-import { CampoTexto } from '@/components/CampoTexto';
+import { CampoTextoControlado } from '@/components/CampoTexto';
 import { Cartao } from '@/components/Cartao';
 import { FaixaAviso, type Aviso } from '@/components/FaixaAviso';
 import { FundoGradiente } from '@/components/FundoGradiente';
@@ -19,29 +18,24 @@ import { normalizarEmail, validarEmail } from '@/utils/validacao';
 export default function TelaRecuperarConta() {
   const router = useRouter();
   const { tema } = useTema();
-  const [email, definirEmail] = useState('');
-  const [erroCampo, definirErroCampo] = useState<string | null>(null);
+  const { control, handleSubmit, formState } = useForm<{ email: string }>({
+    defaultValues: { email: '' },
+  });
+  const carregando = formState.isSubmitting;
   const [aviso, definirAviso] = useState<Aviso | null>(null);
-  const [carregando, definirCarregando] = useState(false);
 
-  async function enviar() {
-    const encontrado = validarEmail(email);
-    definirErroCampo(encontrado);
+  const enviar = handleSubmit(async ({ email }) => {
     definirAviso(null);
-    if (encontrado || carregando) return;
-
-    definirCarregando(true);
     const resultado = await api<{ mensagem: string }>('/auth/recuperar-conta', 'POST', {
       email: normalizarEmail(email),
       redirect_url: Linking.createURL('login/redefinir-senha'),
     });
-    definirCarregando(false);
     definirAviso(
       resultado.ok
         ? { tom: 'informacao', titulo: 'Confira seu e-mail', mensagem: resultado.dados.mensagem }
         : { tom: 'erro', titulo: 'Não foi possível enviar', mensagem: resultado.erro },
     );
-  }
+  });
 
   return (
     <FundoGradiente aoVoltar={() => router.back()}>
@@ -61,23 +55,19 @@ export default function TelaRecuperarConta() {
         ) : null}
 
         <View style={styles.campos}>
-          <CampoTexto
+          <CampoTextoControlado
+            controle={control}
+            nome="email"
+            validar={validarEmail}
             rotulo="E-mail"
             icone="mail-outline"
-            placeholder="nome@organizacao.com"
-            value={email}
-            onChangeText={(valor) => {
-              definirEmail(valor);
-              definirErroCampo(null);
-              definirAviso(null);
-            }}
-            erro={erroCampo}
+            placeholder="E-mail"
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
             editable={!carregando}
             returnKeyType="send"
-            onSubmitEditing={enviar}
+            onSubmitEditing={() => void enviar()}
           />
         </View>
 
@@ -85,7 +75,7 @@ export default function TelaRecuperarConta() {
           titulo="Enviar link"
           tituloCarregando="Enviando..."
           carregando={carregando}
-          aoTocar={enviar}
+          aoTocar={() => void enviar()}
           style={styles.botao}
         />
       </Cartao>

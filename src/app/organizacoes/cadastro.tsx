@@ -1,12 +1,11 @@
-/** Tela de cadastro de organização: a solicitação nasce pendente de autorização. */
-
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useForm, useWatch } from 'react-hook-form';
 
 import { Botao } from '@/components/Botao';
-import { CampoTexto } from '@/components/CampoTexto';
+import { CampoTextoControlado } from '@/components/CampoTexto';
 import { Cartao } from '@/components/Cartao';
 import { Etiqueta } from '@/components/Etiqueta';
 import { FaixaAviso } from '@/components/FaixaAviso';
@@ -24,40 +23,29 @@ import {
 export default function TelaCadastroOrganizacao() {
   const router = useRouter();
   const { tema } = useTema();
-  const [nome, definirNome] = useState('');
-  const [descricao, definirDescricao] = useState('');
-  const [erros, definirErros] = useState<{ nome: string | null; descricao: string | null }>({
-    nome: null,
-    descricao: null,
+  const { control, handleSubmit, formState } = useForm<{ nome: string; descricao: string }>({
+    defaultValues: { nome: '', descricao: '' },
   });
+  const descricao = useWatch({ control, name: 'descricao' });
+  const carregando = formState.isSubmitting;
   const [erro, definirErro] = useState('');
-  const [enviada, definirEnviada] = useState(false);
-  const [carregando, definirCarregando] = useState(false);
+  const [enviada, definirEnviada] = useState<string | null>(null);
 
-  async function enviar() {
-    const encontrados = {
-      nome: validarNomeOrganizacao(nome),
-      descricao: validarDescricao(descricao),
-    };
-    definirErros(encontrados);
+  const enviar = handleSubmit(async ({ nome, descricao: texto }) => {
     definirErro('');
-    if (encontrados.nome || encontrados.descricao || carregando) return;
-
-    const texto = descricao.trim();
-    definirCarregando(true);
+    const descricaoLimpa = texto.trim();
     const resultado = await api('/organizacoes', 'POST', {
       nome: nome.trim(),
-      ...(texto ? { descricao: texto } : {}),
+      ...(descricaoLimpa ? { descricao: descricaoLimpa } : {}),
     });
-    definirCarregando(false);
 
     if (!resultado.ok) {
       definirErro(resultado.erro);
       return;
     }
 
-    definirEnviada(true);
-  }
+    definirEnviada(nome.trim());
+  });
 
   return (
     <FundoGradiente aoVoltar={() => router.back()}>
@@ -73,11 +61,11 @@ export default function TelaCadastroOrganizacao() {
               Solicitação enviada
             </Text>
             <Text style={[styles.descricao, { color: tema.cores.textoSuave }]}>
-              A organização {nome.trim()} foi cadastrada e aguarda a autorização de um administrador
+              A organização {enviada} foi cadastrada e aguarda a autorização de um administrador
               do sistema.
             </Text>
             <View style={styles.etiqueta}>
-              <Etiqueta texto="Situação atual: aguardando autorização" tom="alerta" />
+              <Etiqueta texto="Aguardando autorização" tom="alerta" />
             </View>
             <Botao titulo="Voltar ao início" aoTocar={() => router.back()} style={styles.botao} />
           </>
@@ -85,8 +73,7 @@ export default function TelaCadastroOrganizacao() {
           <>
             <Text style={[styles.titulo, { color: tema.cores.texto }]}>Criar organização</Text>
             <Text style={[styles.descricao, { color: tema.cores.textoSuave }]}>
-              Informe os dados da organização. O cadastro passa pela autorização de um administrador
-              do sistema antes de ficar disponível.
+              A organização ficará disponível após a autorização do administrador do sistema.
             </Text>
 
             {erro ? (
@@ -98,32 +85,23 @@ export default function TelaCadastroOrganizacao() {
             ) : null}
 
             <View style={styles.campos}>
-              <CampoTexto
+              <CampoTextoControlado
+                controle={control}
+                nome="nome"
+                validar={validarNomeOrganizacao}
                 rotulo="Nome da organização"
                 icone="business-outline"
-                placeholder="Ex.: Conselho Municipal de Educação"
-                value={nome}
-                onChangeText={(valor) => {
-                  definirNome(valor);
-                  definirErros((atuais) => ({ ...atuais, nome: null }));
-                  definirErro('');
-                }}
-                erro={erros.nome}
                 autoCapitalize="words"
                 autoCorrect={false}
                 editable={!carregando}
               />
 
-              <CampoTexto
+              <CampoTextoControlado
+                controle={control}
+                nome="descricao"
+                validar={validarDescricao}
                 rotulo="Descrição (opcional)"
                 icone="document-text-outline"
-                placeholder="Diga em poucas palavras o que a organização faz."
-                value={descricao}
-                onChangeText={(valor) => {
-                  definirDescricao(valor);
-                  definirErros((atuais) => ({ ...atuais, descricao: null }));
-                }}
-                erro={erros.descricao}
                 dica={`${descricao.trim().length}/${TAMANHO_MAXIMO_DESCRICAO}`}
                 multiline
                 maxLength={TAMANHO_MAXIMO_DESCRICAO}
@@ -135,7 +113,7 @@ export default function TelaCadastroOrganizacao() {
               titulo="Enviar solicitação"
               tituloCarregando="Enviando..."
               carregando={carregando}
-              aoTocar={enviar}
+              aoTocar={() => void enviar()}
               style={styles.botao}
             />
           </>

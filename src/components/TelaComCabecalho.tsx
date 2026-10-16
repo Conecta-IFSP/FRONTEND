@@ -1,10 +1,6 @@
-/**
- * Estrutura das telas internas: cabeçalho com voltar e título centralizado e
- * conteúdo rolável, seguindo o padrão "título da tela no topo".
- */
-
-import type { ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
@@ -15,15 +11,26 @@ import { useTema } from '@/contexts/TemaContext';
 type TelaComCabecalhoProps = {
   titulo: string;
   children: ReactNode;
-  /** Ação do botão de voltar; por padrão volta à tela anterior ou ao início. */
   aoVoltar?: () => void;
+  aoAtualizar?: () => Promise<unknown>;
 };
 
-export function TelaComCabecalho({ titulo, children, aoVoltar }: TelaComCabecalhoProps) {
+export function TelaComCabecalho({ titulo, children, aoVoltar, aoAtualizar }: TelaComCabecalhoProps) {
   const router = useRouter();
   const { tema } = useTema();
+  const [atualizando, definirAtualizando] = useState(false);
   const voltar =
     aoVoltar ?? (() => (router.canGoBack() ? router.back() : router.replace('/inicio')));
+
+  async function atualizar() {
+    if (!aoAtualizar) return;
+    definirAtualizando(true);
+    try {
+      await aoAtualizar();
+    } finally {
+      definirAtualizando(false);
+    }
+  }
 
   return (
     <SafeAreaView
@@ -42,14 +49,25 @@ export function TelaComCabecalho({ titulo, children, aoVoltar }: TelaComCabecalh
         <View style={styles.espaco} />
       </View>
 
-      <KeyboardAvoidingView
+      <KeyboardAwareScrollView
         style={styles.tela}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        contentContainerStyle={styles.conteudo}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={ESPACO.lg}
+        refreshControl={
+          aoAtualizar ? (
+            <RefreshControl
+              refreshing={atualizando}
+              onRefresh={atualizar}
+              colors={[tema.cores.primaria]}
+              tintColor={tema.cores.primaria}
+              progressBackgroundColor={tema.cores.superficie}
+            />
+          ) : undefined
+        }
       >
-        <ScrollView contentContainerStyle={styles.conteudo} keyboardShouldPersistTaps="handled">
-          {children}
-        </ScrollView>
-      </KeyboardAvoidingView>
+        {children}
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

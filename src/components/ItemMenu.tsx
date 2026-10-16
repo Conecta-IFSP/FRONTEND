@@ -1,5 +1,3 @@
-/** Atalho em forma de cartão: ícone, título, descrição e seta para a tela de destino. */
-
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 

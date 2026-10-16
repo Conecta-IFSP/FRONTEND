@@ -1,8 +1,3 @@
-/**
- * Tema do aplicativo. O usuário escolhe entre seguir o aparelho, claro ou
- * escuro; a escolha fica guardada no aparelho e vale desde a abertura do app.
- */
-
 import {
   createContext,
   useCallback,
@@ -41,7 +36,6 @@ async function gravarPreferencia(preferencia: PreferenciaTema) {
 }
 
 type ContextoTema = {
-  /** Tema em uso, já resolvido entre claro e escuro. */
   tema: Tema;
   preferencia: PreferenciaTema;
   definirPreferencia: (preferencia: PreferenciaTema) => void;

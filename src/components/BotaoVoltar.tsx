@@ -1,5 +1,3 @@
-/** Botão circular de voltar, usado no topo das telas. */
-
 import { Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 

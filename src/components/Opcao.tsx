@@ -1,5 +1,3 @@
-/** Opção selecionável em forma de pílula, usada em filtros e escolhas únicas. */
-
 import { Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -10,10 +8,8 @@ type OpcaoProps = {
   titulo: string;
   selecionado: boolean;
   aoTocar: () => void;
-  /** Sem ícone, a opção escolhida mostra um sinal de confirmação. */
   icone?: keyof typeof Ionicons.glyphMap;
   desabilitado?: boolean;
-  /** Ícone acima do texto, para opções lado a lado em espaço estreito. */
   empilhado?: boolean;
   style?: StyleProp<ViewStyle>;
 };

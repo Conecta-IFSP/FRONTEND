@@ -1,5 +1,3 @@
-/** Validações dos formulários: devolvem a mensagem do campo ou null quando válido. */
-
 const EXPRESSAO_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export const TAMANHO_MINIMO_SENHA = 8;
@@ -41,6 +39,11 @@ export function validarNomeOrganizacao(nome: string) {
   const valor = nome.trim();
   if (valor.length === 0) return 'Informe o nome da organização.';
   if (valor.length < 2) return 'O nome deve ter ao menos 2 caracteres.';
+  return null;
+}
+
+export function validarNomeComissao(nome: string) {
+  if (nome.trim().length < 2) return 'Informe um nome com pelo menos 2 caracteres.';
   return null;
 }
 

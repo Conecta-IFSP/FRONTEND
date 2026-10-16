@@ -1,9 +1,3 @@
-/**
- * Botão das telas. O principal usa o degradê da marca; o secundário e o de
- * perigo são contornados. Enquanto carrega, bloqueia novos toques e avisa pelo
- * texto e pelo estado de acessibilidade.
- */
-
 import {
   ActivityIndicator,
   Pressable,
@@ -25,17 +19,13 @@ type BotaoProps = {
   variante?: 'primario' | 'secundario' | 'perigo';
   icone?: keyof typeof Ionicons.glyphMap;
   carregando?: boolean;
-  /** Texto mostrado enquanto a ação está em andamento. */
   tituloCarregando?: string;
   desabilitado?: boolean;
-  /** Versão mais baixa, para ações dentro de cartões. */
   compacto?: boolean;
-  /** Rótulo lido pelo leitor de tela quando o título sozinho não basta. */
   rotuloAcessivel?: string;
   style?: StyleProp<ViewStyle>;
 };
 
-/** Espessura da borda dos botões contornados. */
 const BORDA = 1.5;
 
 export function Botao({

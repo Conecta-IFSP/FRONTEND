@@ -1,5 +1,3 @@
-/** Faixa de aviso: erros, alertas, confirmações e informações para o usuário. */
-
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 

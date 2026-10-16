@@ -1,5 +1,3 @@
-/** Temas, icones e fontes do aplicativo. O tema em uso vem de `useTema` (contexts/TemaContext). */
-
 export const MARCA = {
   azul: '#256EF1',
   azulVivo: '#1A3FF9',

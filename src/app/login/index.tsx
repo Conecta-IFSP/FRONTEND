@@ -1,11 +1,10 @@
-/** Tela de login: valida as credenciais, guarda o token e abre o início. */
-
-import { useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Link } from 'expo-router';
+import { useForm } from 'react-hook-form';
 
 import { Botao } from '@/components/Botao';
-import { CampoTexto } from '@/components/CampoTexto';
+import { CampoTextoControlado } from '@/components/CampoTexto';
 import { Cartao } from '@/components/Cartao';
 import { FaixaAviso } from '@/components/FaixaAviso';
 import { FundoGradiente } from '@/components/FundoGradiente';
@@ -22,47 +21,41 @@ type RespostaLogin = {
   usuario: { nome: string; tipo?: string; organizacao?: string | null; tema?: string };
 };
 
+type DadosLogin = { email: string; senha: string };
+
 export default function TelaLogin() {
   const sessao = useSessao();
   const { tema, definirPreferencia } = useTema();
-  const campoSenha = useRef<TextInput>(null);
-  const [email, definirEmail] = useState('');
-  const [senha, definirSenha] = useState('');
-  const [senhaVisivel, definirSenhaVisivel] = useState(false);
-  const [erros, definirErros] = useState<{ email: string | null; senha: string | null }>({
-    email: null,
-    senha: null,
+  const { control, handleSubmit, setFocus, formState } = useForm<DadosLogin>({
+    defaultValues: { email: '', senha: '' },
   });
+  const carregando = formState.isSubmitting;
+  const [senhaVisivel, definirSenhaVisivel] = useState(false);
   const [erro, definirErro] = useState('');
-  const [carregando, definirCarregando] = useState(false);
 
-  async function entrar() {
-    const encontrados = { email: validarEmail(email), senha: validarSenha(senha) };
-    definirErros(encontrados);
+  const entrar = handleSubmit(async ({ email, senha }) => {
     definirErro('');
-    if (encontrados.email || encontrados.senha || carregando) return;
-
-    definirCarregando(true);
     const resultado = await api<RespostaLogin>('/auth/login', 'POST', {
       email: normalizarEmail(email),
       senha,
     });
 
     if (!resultado.ok) {
-      definirCarregando(false);
       definirErro(resultado.erro);
       return;
     }
 
     const { access_token: accessToken, token, usuario } = resultado.dados;
-    if (!accessToken && !token) { definirCarregando(false); definirErro('O servidor não retornou uma sessão válida.'); return; }
+    if (!accessToken && !token) {
+      definirErro('Tente novamente em instantes.');
+      return;
+    }
     if (!await sessao.entrar(accessToken ?? token!)) {
-      definirCarregando(false);
       definirErro('Não foi possível verificar sua sessão. Tente novamente.');
       return;
     }
     if (ehPreferenciaTema(usuario.tema)) definirPreferencia(usuario.tema);
-  }
+  });
 
   return (
     <FundoGradiente>
@@ -83,16 +76,13 @@ export default function TelaLogin() {
         ) : null}
 
         <View style={styles.campos}>
-          <CampoTexto
+          <CampoTextoControlado
+            controle={control}
+            nome="email"
+            validar={validarEmail}
             rotulo="E-mail"
             icone="mail-outline"
-            placeholder="nome@organizacao.com"
-            value={email}
-            onChangeText={(valor) => {
-              definirEmail(valor);
-              definirErros((atuais) => ({ ...atuais, email: null }));
-            }}
-            erro={erros.email}
+            placeholder="E-mail"
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
@@ -100,20 +90,16 @@ export default function TelaLogin() {
             textContentType="emailAddress"
             returnKeyType="next"
             editable={!carregando}
-            onSubmitEditing={() => campoSenha.current?.focus()}
+            onSubmitEditing={() => setFocus('senha')}
           />
 
-          <CampoTexto
-            ref={campoSenha}
+          <CampoTextoControlado
+            controle={control}
+            nome="senha"
+            validar={validarSenha}
             rotulo="Senha"
             icone="lock-closed-outline"
-            placeholder="Sua senha"
-            value={senha}
-            onChangeText={(valor) => {
-              definirSenha(valor);
-              definirErros((atuais) => ({ ...atuais, senha: null }));
-            }}
-            erro={erros.senha}
+            placeholder="Senha"
             secureTextEntry={!senhaVisivel}
             autoCapitalize="none"
             autoCorrect={false}
@@ -121,7 +107,7 @@ export default function TelaLogin() {
             textContentType="password"
             returnKeyType="go"
             editable={!carregando}
-            onSubmitEditing={entrar}
+            onSubmitEditing={() => void entrar()}
             acaoFinal={{
               icone: senhaVisivel ? 'eye-off-outline' : 'eye-outline',
               rotuloAcessivel: senhaVisivel ? 'Ocultar senha' : 'Mostrar senha',
@@ -140,7 +126,7 @@ export default function TelaLogin() {
           titulo="Entrar"
           tituloCarregando="Entrando..."
           carregando={carregando}
-          aoTocar={entrar}
+          aoTocar={() => void entrar()}
           style={styles.botao}
         />
       </Cartao>

@@ -1,11 +1,10 @@
-/** Tela de criação de conta: valida os dados e cadastra o usuário. */
-
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Link, useRouter } from 'expo-router';
+import { useForm } from 'react-hook-form';
 
 import { Botao } from '@/components/Botao';
-import { CampoTexto } from '@/components/CampoTexto';
+import { CampoTextoControlado } from '@/components/CampoTexto';
 import { Cartao } from '@/components/Cartao';
 import { FaixaAviso } from '@/components/FaixaAviso';
 import { FundoGradiente } from '@/components/FundoGradiente';
@@ -21,54 +20,26 @@ import {
   validarSenha,
 } from '@/utils/validacao';
 
-type Erros = {
-  nome: string | null;
-  email: string | null;
-  senha: string | null;
-  confirmacao: string | null;
-};
+type DadosCadastro = { nome: string; email: string; senha: string; confirmacao: string };
 
 export default function TelaCadastro() {
   const router = useRouter();
   const { tema } = useTema();
-  const [nome, definirNome] = useState('');
-  const [email, definirEmail] = useState('');
-  const [senha, definirSenha] = useState('');
-  const [confirmacao, definirConfirmacao] = useState('');
+  const { control, handleSubmit, formState } = useForm<DadosCadastro>({
+    defaultValues: { nome: '', email: '', senha: '', confirmacao: '' },
+  });
+  const carregando = formState.isSubmitting;
   const [senhaVisivel, definirSenhaVisivel] = useState(false);
   const [confirmacaoVisivel, definirConfirmacaoVisivel] = useState(false);
-  const [erros, definirErros] = useState<Erros>({
-    nome: null,
-    email: null,
-    senha: null,
-    confirmacao: null,
-  });
   const [erro, definirErro] = useState('');
-  const [carregando, definirCarregando] = useState(false);
 
-  function limpar(campo: keyof Erros) {
-    definirErros((atuais) => ({ ...atuais, [campo]: null }));
+  const criarConta = handleSubmit(async ({ nome, email, senha }) => {
     definirErro('');
-  }
-
-  async function criarConta() {
-    const encontrados: Erros = {
-      nome: validarNome(nome),
-      email: validarEmail(email),
-      senha: validarSenha(senha),
-      confirmacao: validarConfirmacaoSenha(senha, confirmacao),
-    };
-    definirErros(encontrados);
-    definirErro('');
-    if (Object.values(encontrados).some(Boolean) || carregando) return;
-
-    definirCarregando(true);
     const resultado = await api('/usuarios', 'POST', {
       nome: nome.trim(),
       email: normalizarEmail(email),
       senha,
     });
-    definirCarregando(false);
 
     if (!resultado.ok) {
       definirErro(resultado.erro);
@@ -76,7 +47,7 @@ export default function TelaCadastro() {
     }
 
     router.replace({ pathname: '/login/verificar-cadastro', params: { email: normalizarEmail(email) } });
-  }
+  });
 
   return (
     <FundoGradiente aoVoltar={() => router.back()}>
@@ -97,32 +68,25 @@ export default function TelaCadastro() {
         ) : null}
 
         <View style={styles.campos}>
-          <CampoTexto
+          <CampoTextoControlado
+            controle={control}
+            nome="nome"
+            validar={validarNome}
             rotulo="Nome"
             icone="person-outline"
-            placeholder="Seu nome completo"
-            value={nome}
-            onChangeText={(valor) => {
-              definirNome(valor);
-              limpar('nome');
-            }}
-            erro={erros.nome}
             autoCapitalize="words"
             autoComplete="name"
             textContentType="name"
             editable={!carregando}
           />
 
-          <CampoTexto
+          <CampoTextoControlado
+            controle={control}
+            nome="email"
+            validar={validarEmail}
             rotulo="E-mail"
             icone="mail-outline"
-            placeholder="nome@organizacao.com"
-            value={email}
-            onChangeText={(valor) => {
-              definirEmail(valor);
-              limpar('email');
-            }}
-            erro={erros.email}
+            placeholder="E-mail"
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
@@ -131,16 +95,13 @@ export default function TelaCadastro() {
             editable={!carregando}
           />
 
-          <CampoTexto
+          <CampoTextoControlado
+            controle={control}
+            nome="senha"
+            validar={validarSenha}
             rotulo="Senha"
             icone="lock-closed-outline"
-            placeholder="Crie uma senha"
-            value={senha}
-            onChangeText={(valor) => {
-              definirSenha(valor);
-              limpar('senha');
-            }}
-            erro={erros.senha}
+            placeholder="Senha"
             secureTextEntry={!senhaVisivel}
             autoCapitalize="none"
             autoCorrect={false}
@@ -153,23 +114,20 @@ export default function TelaCadastro() {
             }}
           />
 
-          <CampoTexto
+          <CampoTextoControlado
+            controle={control}
+            nome="confirmacao"
+            validar={(confirmacao, valores) => validarConfirmacaoSenha(valores.senha, confirmacao)}
             rotulo="Confirmar senha"
             icone="lock-closed-outline"
-            placeholder="Digite novamente"
-            value={confirmacao}
-            onChangeText={(valor) => {
-              definirConfirmacao(valor);
-              limpar('confirmacao');
-            }}
-            erro={erros.confirmacao}
+            placeholder="Repita a senha"
             secureTextEntry={!confirmacaoVisivel}
             autoCapitalize="none"
             autoCorrect={false}
             textContentType="newPassword"
             editable={!carregando}
             returnKeyType="go"
-            onSubmitEditing={criarConta}
+            onSubmitEditing={() => void criarConta()}
             acaoFinal={{
               icone: confirmacaoVisivel ? 'eye-off-outline' : 'eye-outline',
               rotuloAcessivel: confirmacaoVisivel ? 'Ocultar confirmação' : 'Mostrar confirmação',
@@ -182,7 +140,7 @@ export default function TelaCadastro() {
           titulo="Criar conta"
           tituloCarregando="Criando..."
           carregando={carregando}
-          aoTocar={criarConta}
+          aoTocar={() => void criarConta()}
           style={styles.botao}
         />
       </Cartao>

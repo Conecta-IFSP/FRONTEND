@@ -1,10 +1,9 @@
-/** Tela de troca de senha com a conta já autenticada. */
-
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useForm } from 'react-hook-form';
 
 import { Botao } from '@/components/Botao';
-import { CampoTexto } from '@/components/CampoTexto';
+import { CampoTextoControlado } from '@/components/CampoTexto';
 import { Cartao } from '@/components/Cartao';
 import { FaixaAviso, type Aviso } from '@/components/FaixaAviso';
 import { TelaComCabecalho } from '@/components/TelaComCabecalho';
@@ -13,57 +12,35 @@ import { useTema } from '@/contexts/TemaContext';
 import { api } from '@/services/api';
 import { validarConfirmacaoSenha, validarSenha } from '@/utils/validacao';
 
-type Erros = { atual: string | null; nova: string | null; confirmacao: string | null };
+type DadosSenha = { atual: string; nova: string; confirmacao: string };
+
+const VAZIO: DadosSenha = { atual: '', nova: '', confirmacao: '' };
 
 export default function TelaAlterarSenha() {
   const { tema } = useTema();
-  const [senhaAtual, definirSenhaAtual] = useState('');
-  const [novaSenha, definirNovaSenha] = useState('');
-  const [confirmacao, definirConfirmacao] = useState('');
-  const [erros, definirErros] = useState<Erros>({
-    atual: null,
-    nova: null,
-    confirmacao: null,
-  });
+  const { control, handleSubmit, reset, formState } = useForm<DadosSenha>({ defaultValues: VAZIO });
+  const carregando = formState.isSubmitting;
   const [aviso, definirAviso] = useState<Aviso | null>(null);
-  const [carregando, definirCarregando] = useState(false);
 
-  function limpar(campo: keyof Erros) {
-    definirErros((atuais) => ({ ...atuais, [campo]: null }));
+  const salvar = handleSubmit(async ({ atual, nova }) => {
     definirAviso(null);
-  }
-
-  async function salvar() {
-    const encontrados: Erros = {
-      atual: validarSenha(senhaAtual),
-      nova: validarSenha(novaSenha),
-      confirmacao: validarConfirmacaoSenha(novaSenha, confirmacao),
-    };
-    definirErros(encontrados);
-    definirAviso(null);
-    if (Object.values(encontrados).some(Boolean) || carregando) return;
-
-    definirCarregando(true);
     const resultado = await api('/usuarios/me/senha', 'PATCH', {
-      senha_atual: senhaAtual,
-      nova_senha: novaSenha,
+      senha_atual: atual,
+      nova_senha: nova,
     });
-    definirCarregando(false);
 
     if (!resultado.ok) {
       definirAviso({ tom: 'erro', titulo: 'Não foi possível alterar', mensagem: resultado.erro });
       return;
     }
 
-    definirSenhaAtual('');
-    definirNovaSenha('');
-    definirConfirmacao('');
+    reset(VAZIO);
     definirAviso({
       tom: 'sucesso',
       titulo: 'Senha alterada',
       mensagem: 'Use a nova senha no próximo acesso.',
     });
-  }
+  });
 
   return (
     <TelaComCabecalho titulo="Alterar senha">
@@ -80,48 +57,39 @@ export default function TelaAlterarSenha() {
         ) : null}
 
         <View style={styles.campos}>
-          <CampoTexto
+          <CampoTextoControlado
+            controle={control}
+            nome="atual"
+            validar={validarSenha}
             rotulo="Senha atual"
             icone="lock-closed-outline"
-            value={senhaAtual}
-            onChangeText={(valor) => {
-              definirSenhaAtual(valor);
-              limpar('atual');
-            }}
-            erro={erros.atual}
             secureTextEntry
             autoCapitalize="none"
             editable={!carregando}
           />
 
-          <CampoTexto
+          <CampoTextoControlado
+            controle={control}
+            nome="nova"
+            validar={validarSenha}
             rotulo="Nova senha"
             icone="key-outline"
-            value={novaSenha}
-            onChangeText={(valor) => {
-              definirNovaSenha(valor);
-              limpar('nova');
-            }}
-            erro={erros.nova}
             secureTextEntry
             autoCapitalize="none"
             editable={!carregando}
           />
 
-          <CampoTexto
+          <CampoTextoControlado
+            controle={control}
+            nome="confirmacao"
+            validar={(confirmacao, valores) => validarConfirmacaoSenha(valores.nova, confirmacao)}
             rotulo="Confirmar nova senha"
             icone="checkmark-circle-outline"
-            value={confirmacao}
-            onChangeText={(valor) => {
-              definirConfirmacao(valor);
-              limpar('confirmacao');
-            }}
-            erro={erros.confirmacao}
             secureTextEntry
             autoCapitalize="none"
             editable={!carregando}
             returnKeyType="go"
-            onSubmitEditing={salvar}
+            onSubmitEditing={() => void salvar()}
           />
         </View>
 
@@ -129,7 +97,7 @@ export default function TelaAlterarSenha() {
           titulo="Alterar senha"
           tituloCarregando="Salvando..."
           carregando={carregando}
-          aoTocar={salvar}
+          aoTocar={() => void salvar()}
           style={styles.botao}
         />
       </Cartao>

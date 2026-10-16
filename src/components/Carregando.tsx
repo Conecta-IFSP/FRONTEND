@@ -1,5 +1,3 @@
-/** Indicador de carregamento centralizado, na cor principal do tema. */
-
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { ESPACO } from '@/constants/theme';

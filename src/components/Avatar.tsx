@@ -1,5 +1,3 @@
-/** Círculo com as iniciais da pessoa, usado nas listas de membros. */
-
 import { StyleSheet, Text, View } from 'react-native';
 
 import { FONTES } from '@/constants/theme';

@@ -41,7 +41,7 @@ export default function TelaVerificarCadastro() {
 
   return <FundoGradiente aoVoltar={() => router.back()}>
     <Logo largura={150} />
-    <Cartao style={styles.cartao}>
+    <Cartao style={[styles.cartao, { borderColor: tema.cores.borda }]}>
       <Text style={[styles.titulo, { color: tema.cores.texto }]}>Confirme seu e-mail</Text>
       <Text style={[styles.descricao, { color: tema.cores.textoSuave }]}>Digite o código enviado para</Text>
       <Text style={[styles.email, { color: tema.cores.texto }]}>{parametros.email}</Text>
@@ -49,10 +49,14 @@ export default function TelaVerificarCadastro() {
 
       <Pressable style={styles.codigoLinha} onPress={focarEntrada} accessibilityLabel="Código de confirmação">
         {Array.from({ length: 7 }, (_, indice) => <View key={indice} style={styles.grupo}>
-          <View style={[styles.caixa, indice === caracteres.length && styles.caixaAtiva]}>
-            <Text style={styles.caractere}>{caracteres[indice] ?? ''}</Text>
+          <View style={[
+            styles.caixa,
+            { borderColor: tema.cores.campoBorda, backgroundColor: tema.cores.campoFundo },
+            indice === caracteres.length && [styles.caixaAtiva, { borderColor: tema.cores.campoBordaFoco, shadowColor: tema.cores.campoBordaFoco }],
+          ]}>
+            <Text style={[styles.caractere, { color: tema.cores.texto }]}>{caracteres[indice] ?? ''}</Text>
           </View>
-          {indice === 2 ? <Text style={styles.separador}>-</Text> : null}
+          {indice === 2 ? <Text style={[styles.separador, { color: tema.cores.textoSuave }]}>-</Text> : null}
         </View>)}
       </Pressable>
       <TextInput ref={entrada} value={codigo} onChangeText={(valor) => { definirCodigo(valor.replace(/[^a-z0-9]/gi, '').toUpperCase().slice(0, 7)); definirErro(''); }} maxLength={8} autoCapitalize="characters" autoCorrect={false} keyboardType="default" onSubmitEditing={verificar} editable={!carregando} style={styles.entradaOculta} />
@@ -63,17 +67,17 @@ export default function TelaVerificarCadastro() {
 }
 
 const styles = StyleSheet.create({
-  cartao: { marginTop: ESPACO.lg, paddingHorizontal: 28, paddingVertical: 30, borderWidth: 1, borderColor: '#DDE3EF', borderRadius: 16 },
+  cartao: { marginTop: ESPACO.lg, paddingHorizontal: 28, paddingVertical: 30, borderWidth: 1, borderRadius: 16 },
   titulo: { ...TIPOGRAFIA.titulo, textAlign: 'center', fontSize: 26, lineHeight: 34 },
   descricao: { ...TIPOGRAFIA.corpoPequeno, marginTop: 22, textAlign: 'center', fontSize: 16 },
   email: { textAlign: 'center', fontSize: 16, fontWeight: '600', marginTop: 3 },
   aviso: { marginTop: ESPACO.lg - 4 },
   codigoLinha: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 28, gap: 7 },
   grupo: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  caixa: { width: 39, height: 54, borderWidth: 1.5, borderColor: '#D3DAE8', borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF' },
-  caixaAtiva: { borderColor: '#256EF1', borderWidth: 2, shadowColor: '#256EF1', shadowOpacity: 0.18, shadowRadius: 3, shadowOffset: { width: 0, height: 0 } },
-  caractere: { color: '#18243C', fontSize: 28, fontWeight: '700' },
-  separador: { color: '#4E5A78', fontSize: 25, fontWeight: '600' },
+  caixa: { width: 39, height: 54, borderWidth: 1.5, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  caixaAtiva: { borderWidth: 2, shadowOpacity: 0.18, shadowRadius: 3, shadowOffset: { width: 0, height: 0 } },
+  caractere: { fontSize: 28, fontWeight: '700' },
+  separador: { fontSize: 25, fontWeight: '600' },
   entradaOculta: { position: 'absolute', width: 1, height: 1, opacity: 0 },
   botao: { marginTop: 28 },
   rodape: { ...TIPOGRAFIA.corpoPequeno, textAlign: 'center', marginTop: 24, fontSize: 13 },

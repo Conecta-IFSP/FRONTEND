@@ -1,5 +1,3 @@
-/** Etiqueta curta de situação (ativa, pendente, aprovada...), colorida conforme o tom. */
-
 import { StyleSheet, Text, View } from 'react-native';
 
 import { ESPACO, FONTES, RAIO } from '@/constants/theme';

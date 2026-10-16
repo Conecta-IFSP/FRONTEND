@@ -1,15 +1,11 @@
-/**
- * Tela de dados pessoais: carrega e salva o nome, o e-mail e o tema preferido da
- * conta, e reúne a troca de senha e a saída da conta.
- */
-
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useForm } from 'react-hook-form';
 
 import { Botao } from '@/components/Botao';
-import { CampoTexto } from '@/components/CampoTexto';
+import { CampoTextoControlado } from '@/components/CampoTexto';
 import { Carregando } from '@/components/Carregando';
 import { Cartao } from '@/components/Cartao';
 import { FaixaAviso, type Aviso } from '@/components/FaixaAviso';
@@ -39,15 +35,12 @@ export default function TelaPerfil() {
   const { tema, preferencia, definirPreferencia } = useTema();
   const [preferenciaSelecionada, definirPreferenciaSelecionada] =
     useState<PreferenciaTema>(preferencia);
-  const [nome, definirNome] = useState('');
-  const [email, definirEmail] = useState('');
-  const [erros, definirErros] = useState<{ nome: string | null; email: string | null }>({
-    nome: null,
-    email: null,
+  const { control, handleSubmit, reset, formState } = useForm<{ nome: string; email: string }>({
+    defaultValues: { nome: '', email: '' },
   });
+  const salvando = formState.isSubmitting;
   const [aviso, definirAviso] = useState<Aviso | null>(null);
   const [carregando, definirCarregando] = useState(true);
-  const [salvando, definirSalvando] = useState(false);
 
   useEffect(() => {
     let ativa = true;
@@ -59,8 +52,7 @@ export default function TelaPerfil() {
         definirAviso({ tom: 'erro', titulo: 'Não foi possível carregar', mensagem: resultado.erro });
         return;
       }
-      definirNome(resultado.dados.nome);
-      definirEmail(resultado.dados.email);
+      reset({ nome: resultado.dados.nome, email: resultado.dados.email });
       if (ehPreferenciaTema(resultado.dados.tema)) {
         definirPreferencia(resultado.dados.tema);
         definirPreferenciaSelecionada(resultado.dados.tema);
@@ -70,21 +62,15 @@ export default function TelaPerfil() {
     return () => {
       ativa = false;
     };
-  }, [definirPreferencia]);
+  }, [definirPreferencia, reset]);
 
-  async function salvar() {
-    const encontrados = { nome: validarNome(nome), email: validarEmail(email) };
-    definirErros(encontrados);
+  const salvar = handleSubmit(async ({ nome, email }) => {
     definirAviso(null);
-    if (encontrados.nome || encontrados.email || salvando) return;
-
-    definirSalvando(true);
     const resultado = await api<Perfil>('/usuarios/me', 'PATCH', {
       nome: nome.trim(),
       email: normalizarEmail(email),
       tema: preferenciaSelecionada,
     });
-    definirSalvando(false);
 
     if (resultado.ok) definirPreferencia(preferenciaSelecionada);
 
@@ -97,7 +83,7 @@ export default function TelaPerfil() {
           }
         : { tom: 'erro', titulo: 'Não foi possível salvar', mensagem: resultado.erro },
     );
-  }
+  });
 
   async function sair() {
     await sessao.sair();
@@ -121,28 +107,22 @@ export default function TelaPerfil() {
           ) : null}
 
           <View style={styles.campos}>
-            <CampoTexto
+            <CampoTextoControlado
+              controle={control}
+              nome="nome"
+              validar={validarNome}
               rotulo="Nome"
               icone="person-outline"
-              value={nome}
-              onChangeText={(valor) => {
-                definirNome(valor);
-                definirErros((atuais) => ({ ...atuais, nome: null }));
-              }}
-              erro={erros.nome}
               autoCapitalize="words"
               editable={!salvando}
             />
 
-            <CampoTexto
+            <CampoTextoControlado
+              controle={control}
+              nome="email"
+              validar={validarEmail}
               rotulo="E-mail"
               icone="mail-outline"
-              value={email}
-              onChangeText={(valor) => {
-                definirEmail(valor);
-                definirErros((atuais) => ({ ...atuais, email: null }));
-              }}
-              erro={erros.email}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -170,7 +150,7 @@ export default function TelaPerfil() {
             titulo="Salvar alterações"
             tituloCarregando="Salvando..."
             carregando={salvando}
-            aoTocar={salvar}
+            aoTocar={() => void salvar()}
             style={styles.botao}
           />
           <Botao

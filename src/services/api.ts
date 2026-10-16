@@ -1,8 +1,3 @@
-/**
- * Acesso à API do Conecta+ e guarda do token da sessão. Em aparelho físico o
- * `localhost` do .env é trocado pelo IP do computador informado pelo Expo.
- */
-
 import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
@@ -88,7 +83,7 @@ export async function api<T>(
 
     return { ok: true, dados: dados as T };
   } catch {
-    return { ok: false, erro: 'Não foi possível falar com o servidor.' };
+    return { ok: false, erro: 'Não foi possível conectar ao servidor.' };
   }
 }
 
@@ -106,7 +101,9 @@ export type Organizacao = {
   }[];
 };
 
-export type StatusVinculo = 'PENDENTE' | 'APROVADO' | 'REJEITADO';
+export type StatusVinculo = 'PENDENTE' | 'APROVADO' | 'REJEITADO' | 'CONVIDADO';
+
+export type PapelOrganizacao = 'ADMIN' | 'MEMBRO';
 
 export type PapelComissao = 'MEMBRO' | 'RESPONSAVEL';
 

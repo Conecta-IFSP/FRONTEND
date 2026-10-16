@@ -1,10 +1,9 @@
-/** Pilha de navegação do aplicativo, fontes da marca e tema. */
-
 import { useEffect } from 'react';
 import { Stack, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { Poppins_400Regular } from '@expo-google-fonts/poppins/400Regular';
 import { Poppins_500Medium } from '@expo-google-fonts/poppins/500Medium';
 import { Poppins_600SemiBold } from '@expo-google-fonts/poppins/600SemiBold';
@@ -29,9 +28,11 @@ export default function LayoutRaiz() {
   if (!carregadas && !erro) return null;
 
   return (
-    <TemaProvider>
-      <SessaoProvider><Navegacao /></SessaoProvider>
-    </TemaProvider>
+    <KeyboardProvider>
+      <TemaProvider>
+        <SessaoProvider><Navegacao /></SessaoProvider>
+      </TemaProvider>
+    </KeyboardProvider>
   );
 }
 

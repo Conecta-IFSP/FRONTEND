@@ -1,11 +1,7 @@
-/**
- * Campo de texto dos formulários: rótulo acima, ícone à esquerda e a mensagem
- * de validação logo abaixo, junto do campo que precisa de correção.
- */
-
 import { forwardRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useController, type Control, type FieldPath, type FieldValues } from 'react-hook-form';
 
 import { ESPACO, FONTES, RAIO, TIPOGRAFIA } from '@/constants/theme';
 import { useTema } from '@/contexts/TemaContext';
@@ -13,15 +9,12 @@ import { useTema } from '@/contexts/TemaContext';
 type CampoTextoProps = TextInputProps & {
   rotulo: string;
   icone?: keyof typeof Ionicons.glyphMap;
-  /** Mensagem de validação; quando presente, destaca o campo como inválido. */
   erro?: string | null;
-  /** Botão à direita do campo, usado para mostrar ou ocultar a senha. */
   acaoFinal?: {
     icone: keyof typeof Ionicons.glyphMap;
     rotuloAcessivel: string;
     aoTocar: () => void;
   };
-  /** Texto de apoio abaixo do campo, à direita (por exemplo, o contador de caracteres). */
   dica?: string;
 };
 
@@ -29,13 +22,27 @@ const ALTURA = 56;
 const ALTURA_MULTILINHA = 120;
 
 export const CampoTexto = forwardRef<TextInput, CampoTextoProps>(function CampoTexto(
-  { rotulo, icone, erro = null, acaoFinal, dica, multiline = false, onFocus, onBlur, style, ...props },
+  {
+    rotulo,
+    icone,
+    erro = null,
+    acaoFinal,
+    dica,
+    multiline = false,
+    placeholder,
+    value,
+    onFocus,
+    onBlur,
+    style,
+    ...props
+  },
   ref,
 ) {
   const { cores } = useTema().tema;
   const [focado, definirFocado] = useState(false);
   const invalido = Boolean(erro);
   const destaque = invalido ? cores.erro : focado ? cores.campoBordaFoco : null;
+  const exemploProprio = !multiline && value !== undefined && Boolean(placeholder);
 
   return (
     <View style={styles.container}>
@@ -57,30 +64,55 @@ export const CampoTexto = forwardRef<TextInput, CampoTextoProps>(function CampoT
           />
         ) : null}
 
-        <TextInput
-          ref={ref}
-          multiline={multiline}
-          textAlignVertical={multiline ? 'top' : 'center'}
-          placeholderTextColor={cores.placeholder}
-          accessibilityLabel={rotulo}
-          accessibilityHint={erro ?? undefined}
-          onFocus={(evento) => {
-            definirFocado(true);
-            onFocus?.(evento);
-          }}
-          onBlur={(evento) => {
-            definirFocado(false);
-            onBlur?.(evento);
-          }}
+        <View
           style={[
-            styles.entrada,
-            multiline ? styles.entradaMultilinha : styles.entradaLinha,
+            styles.areaEntrada,
+            multiline ? null : styles.areaEntradaLinha,
             icone ? styles.entradaComIcone : null,
-            { color: cores.texto },
-            style,
           ]}
-          {...props}
-        />
+        >
+          <TextInput
+            ref={ref}
+            multiline={multiline}
+            textAlignVertical={multiline ? 'top' : 'center'}
+            value={value}
+            placeholder={exemploProprio ? undefined : placeholder}
+            placeholderTextColor={cores.placeholder}
+            accessibilityLabel={rotulo}
+            accessibilityHint={erro ?? placeholder}
+            onFocus={(evento) => {
+              definirFocado(true);
+              onFocus?.(evento);
+            }}
+            onBlur={(evento) => {
+              definirFocado(false);
+              onBlur?.(evento);
+            }}
+            style={[
+              styles.entrada,
+              multiline ? styles.entradaMultilinha : styles.entradaLinha,
+              { color: cores.texto },
+              style,
+            ]}
+            {...props}
+          />
+
+          {exemploProprio && !value ? (
+            <View
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+              style={styles.exemplo}
+            >
+              <Text
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                style={[styles.textoExemplo, { color: cores.placeholder }]}
+              >
+                {placeholder}
+              </Text>
+            </View>
+          ) : null}
+        </View>
 
         {acaoFinal ? (
           <Pressable
@@ -112,6 +144,48 @@ export const CampoTexto = forwardRef<TextInput, CampoTextoProps>(function CampoT
   );
 });
 
+type CampoTextoControladoProps<T extends FieldValues> = Omit<
+  CampoTextoProps,
+  'value' | 'onChangeText' | 'erro'
+> & {
+  controle: Control<T>;
+  nome: FieldPath<T>;
+  validar?: (valor: string, valores: T) => string | null;
+};
+
+export function CampoTextoControlado<T extends FieldValues>({
+  controle,
+  nome,
+  validar,
+  onBlur,
+  ...props
+}: CampoTextoControladoProps<T>) {
+  const {
+    field: { ref, value, onChange, onBlur: marcarTocado },
+    fieldState: { error },
+  } = useController({
+    control: controle,
+    name: nome,
+    rules: validar
+      ? { validate: (valor, valores) => validar(String(valor ?? ''), valores) ?? true }
+      : undefined,
+  });
+
+  return (
+    <CampoTexto
+      {...props}
+      ref={ref}
+      value={String(value ?? '')}
+      onChangeText={onChange}
+      onBlur={(evento) => {
+        marcarTocado();
+        onBlur?.(evento);
+      }}
+      erro={error?.message ?? null}
+    />
+  );
+}
+
 const styles = StyleSheet.create({
   container: { width: '100%' },
   rotulo: { ...TIPOGRAFIA.rotulo, marginBottom: ESPACO.sm },
@@ -129,10 +203,28 @@ const styles = StyleSheet.create({
     paddingVertical: ESPACO.md - 2,
   },
   iconeMultilinha: { marginTop: 2 },
-  entrada: { flex: 1, minWidth: 0, fontFamily: FONTES.corpo, fontSize: 15, outlineWidth: 0 },
-  entradaLinha: { height: '100%' },
+  areaEntrada: { flex: 1, minWidth: 0 },
+  areaEntradaLinha: { alignSelf: 'stretch', justifyContent: 'center' },
+  entrada: {
+    minWidth: 0,
+    paddingHorizontal: 0,
+    fontFamily: FONTES.corpo,
+    fontSize: 15,
+    outlineWidth: 0,
+  },
+  entradaLinha: { height: '100%', paddingVertical: 0 },
   entradaMultilinha: { minHeight: ALTURA_MULTILINHA - 2 * (ESPACO.md - 2) - 3, paddingTop: 0 },
   entradaComIcone: { marginLeft: ESPACO.md - 4 },
+  exemplo: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    justifyContent: 'center',
+    pointerEvents: 'none',
+  },
+  textoExemplo: { fontFamily: FONTES.corpo, fontSize: 15 },
   acaoFinal: { paddingLeft: ESPACO.sm },
   rodape: { marginTop: ESPACO.sm, flexDirection: 'row', alignItems: 'flex-start', gap: ESPACO.sm },
   erro: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },

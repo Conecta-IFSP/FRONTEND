@@ -1,5 +1,3 @@
-/** Mensagem de lista vazia, com ícone, para quando não há nada a mostrar. */
-
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 

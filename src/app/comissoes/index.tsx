@@ -1,8 +1,3 @@
-/**
- * Lista das comissões das organizações administradas, com busca e filtro por
- * situação. Aberta a partir de uma organização, mostra também os membros dela.
- */
-
 import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -19,6 +14,7 @@ import { FaixaAviso } from '@/components/FaixaAviso';
 import { Opcao } from '@/components/Opcao';
 import { TelaComCabecalho } from '@/components/TelaComCabecalho';
 import { ESPACO, FONTES, TIPOGRAFIA } from '@/constants/theme';
+import { useSessao } from '@/contexts/SessaoContext';
 import { useTema } from '@/contexts/TemaContext';
 import { api, type Comissao, type Organizacao } from '@/services/api';
 
@@ -29,7 +25,7 @@ type MembroDaOrganizacao = NonNullable<Organizacao['membros']>[number];
 export default function TelaComissoes() {
   const router = useRouter();
   const { cores } = useTema().tema;
-  /** Organização escolhida no início; sem ela, a tela reúne todas as que o usuário administra. */
+  const { usuario } = useSessao();
   const { organizacao_id: organizacaoId } = useLocalSearchParams<{ organizacao_id?: string }>();
   const [comissoes, definirComissoes] = useState<Comissao[]>([]);
   const [organizacoes, definirOrganizacoes] = useState<{ _id: string; nome: string }[]>([]);
@@ -40,53 +36,67 @@ export default function TelaComissoes() {
   const [membros, definirMembros] = useState<MembroDaOrganizacao[]>([]);
   const [erroMembros, definirErroMembros] = useState('');
 
+  const carregar = useCallback(
+    async (continuar: () => boolean = () => true) => {
+      definirErro('');
+      definirErroMembros('');
+
+      const [lista, orgs] = await Promise.all([
+        api<Comissao[]>('/comissoes'),
+        api<{ _id: string; nome: string }[]>('/comissoes/organizacoes'),
+      ]);
+      if (!continuar()) return;
+      if (!lista.ok) {
+        definirCarregando(false);
+        definirErro(lista.erro);
+        return;
+      }
+      if (!orgs.ok) {
+        definirCarregando(false);
+        definirErro(orgs.erro);
+        return;
+      }
+
+      const administraContexto = orgs.dados.some((org) => org._id === organizacaoId);
+      const detalhes = administraContexto
+        ? await api<Organizacao>(`/organizacoes/${organizacaoId}`)
+        : null;
+      if (!continuar()) return;
+      definirCarregando(false);
+      definirComissoes(lista.dados);
+      definirOrganizacoes(orgs.dados);
+
+      if (detalhes && !detalhes.ok) definirErroMembros(detalhes.erro);
+      if (detalhes?.ok) {
+        definirMembros(
+          (detalhes.dados.membros ?? [])
+            .filter((membro) => membro.status === 'APROVADO')
+            .sort(
+              (a, b) =>
+                Number(b.papel === 'ADMIN') - Number(a.papel === 'ADMIN') ||
+                a.usuario_id.nome.localeCompare(b.usuario_id.nome),
+            ),
+        );
+      }
+    },
+    [organizacaoId],
+  );
+
   useFocusEffect(
     useCallback(() => {
       let ativa = true;
       definirCarregando(true);
-      definirErro('');
-      definirErroMembros('');
-
-      void Promise.all([
-        api<Comissao[]>('/comissoes'),
-        api<{ _id: string; nome: string }[]>('/comissoes/organizacoes'),
-        organizacaoId ? api<Organizacao>(`/organizacoes/${organizacaoId}`) : null,
-      ]).then(([lista, orgs, detalhes]) => {
-        if (!ativa) return;
-        definirCarregando(false);
-        if (!lista.ok) {
-          definirErro(lista.erro);
-          return;
-        }
-        if (!orgs.ok) {
-          definirErro(orgs.erro);
-          return;
-        }
-        definirComissoes(lista.dados);
-        definirOrganizacoes(orgs.dados);
-
-        if (detalhes && !detalhes.ok) definirErroMembros(detalhes.erro);
-        if (detalhes?.ok) {
-          // Membros são os que já foram aceitos; pedidos pendentes ficam na tela Membros.
-          definirMembros(
-            (detalhes.dados.membros ?? [])
-              .filter((membro) => membro.status === 'APROVADO')
-              .sort(
-                (a, b) =>
-                  Number(b.papel === 'ADMIN') - Number(a.papel === 'ADMIN') ||
-                  a.usuario_id.nome.localeCompare(b.usuario_id.nome),
-              ),
-          );
-        }
-      });
-
+      void carregar(() => ativa);
       return () => {
         ativa = false;
       };
-    }, [organizacaoId]),
+    }, [carregar]),
   );
 
   const organizacaoAtual = organizacoes.find((org) => org._id === organizacaoId);
+  const podeCadastrar = organizacaoId ? Boolean(organizacaoAtual) : organizacoes.length > 0;
+  const gerencia = (comissao: Comissao) =>
+    organizacoes.some((org) => org._id === comissao.organizacao_id._id);
   const doContexto = organizacaoId
     ? comissoes.filter((comissao) => comissao.organizacao_id._id === organizacaoId)
     : comissoes;
@@ -98,36 +108,33 @@ export default function TelaComissoes() {
   );
 
   return (
-    <TelaComCabecalho titulo="Comissões">
-      <Text style={[styles.introducao, { color: cores.textoSuave }]}>
-        {organizacaoAtual
-          ? `Gerencie as comissões e equipes de ${organizacaoAtual.nome}.`
-          : 'Gerencie as comissões e equipes das organizações que você administra.'}
-      </Text>
+    <TelaComCabecalho titulo="Comissões" aoAtualizar={() => carregar()}>
+      {podeCadastrar ? (
+        <Text style={[styles.introducao, { color: cores.textoSuave }]}>
+          {organizacaoAtual
+            ? `Gerencie as comissões e equipes de ${organizacaoAtual.nome}.`
+            : 'Gerencie as comissões e equipes das organizações que você administra.'}
+        </Text>
+      ) : null}
 
       {erro ? <FaixaAviso aviso={{ tom: 'erro', mensagem: erro }} /> : null}
       {carregando ? <Carregando rotulo="Carregando comissões" /> : null}
 
-      {!carregando && !erro && organizacoes.length === 0 ? (
-        <EstadoVazio
-          icone="shield-outline"
-          mensagem="Você precisa ser administrador aprovado de uma organização autorizada para cadastrar e gerenciar comissões."
-        />
-      ) : null}
-
-      {!carregando && !erro && organizacoes.length > 0 ? (
+      {!carregando && !erro ? (
         <>
-          <Botao
-            titulo="Nova comissão"
-            icone="add"
-            aoTocar={() =>
-              router.push(
-                organizacaoId
-                  ? { pathname: '/comissoes/nova', params: { organizacao_id: organizacaoId } }
-                  : '/comissoes/nova',
-              )
-            }
-          />
+          {podeCadastrar ? (
+            <Botao
+              titulo="Nova comissão"
+              icone="add"
+              aoTocar={() =>
+                router.push(
+                  organizacaoId
+                    ? { pathname: '/comissoes/nova', params: { organizacao_id: organizacaoId } }
+                    : '/comissoes/nova',
+                )
+              }
+            />
+          ) : null}
 
           <CampoTexto
             rotulo="Buscar comissão ou organização"
@@ -153,9 +160,11 @@ export default function TelaComissoes() {
             <EstadoVazio
               icone={doContexto.length === 0 ? 'people-outline' : 'search-outline'}
               mensagem={
-                doContexto.length === 0
-                  ? 'Nenhuma comissão cadastrada. Toque em Nova comissão para começar.'
-                  : 'Nenhuma comissão encontrada para este filtro.'
+                doContexto.length > 0
+                  ? 'Nenhuma comissão encontrada para este filtro.'
+                  : podeCadastrar
+                    ? 'Nenhuma comissão cadastrada. Toque em Nova comissão para começar.'
+                    : 'Você ainda não faz parte de nenhuma comissão.'
               }
             />
           ) : null}
@@ -166,6 +175,9 @@ export default function TelaComissoes() {
               comissao.membros.length === 1
                 ? '1 integrante'
                 : `${comissao.membros.length} integrantes`;
+            const meuPapel = gerencia(comissao)
+              ? null
+              : comissao.membros.find((membro) => membro.usuario_id?._id === usuario?._id)?.papel;
 
             return (
               <Cartao
@@ -197,6 +209,12 @@ export default function TelaComissoes() {
 
                 <View style={styles.rodape}>
                   <Etiqueta texto={situacao} tom={comissao.ativo ? 'sucesso' : 'neutro'} />
+                  {meuPapel ? (
+                    <Etiqueta
+                      texto={meuPapel === 'RESPONSAVEL' ? 'Responsável' : 'Membro'}
+                      tom={meuPapel === 'RESPONSAVEL' ? 'primaria' : 'neutro'}
+                    />
+                  ) : null}
                   <View style={styles.integrantes}>
                     <Ionicons name="person-outline" size={14} color={cores.textoSutil} />
                     <Text style={[styles.legenda, { color: cores.textoSutil }]}>{integrantes}</Text>
@@ -206,7 +224,7 @@ export default function TelaComissoes() {
             );
           })}
 
-          {organizacaoId ? (
+          {organizacaoAtual ? (
             <>
               <Text style={[styles.secao, { color: cores.texto }]} accessibilityRole="header">
                 Membros da organização ({membros.length})

@@ -1,11 +1,10 @@
-/** Tela de nova senha a partir do link recebido por e-mail. */
-
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useForm } from 'react-hook-form';
 
 import { Botao } from '@/components/Botao';
-import { CampoTexto } from '@/components/CampoTexto';
+import { CampoTextoControlado } from '@/components/CampoTexto';
 import { Cartao } from '@/components/Cartao';
 import { FaixaAviso, type Aviso } from '@/components/FaixaAviso';
 import { FundoGradiente } from '@/components/FundoGradiente';
@@ -19,28 +18,16 @@ export default function TelaRedefinirSenha() {
   const router = useRouter();
   const { tema } = useTema();
   const { token = '' } = useLocalSearchParams<{ token?: string }>();
-  const [senha, definirSenha] = useState('');
-  const [confirmacao, definirConfirmacao] = useState('');
-  const [erros, definirErros] = useState<{ senha: string | null; confirmacao: string | null }>({
-    senha: null,
-    confirmacao: null,
+  const { control, handleSubmit, formState } = useForm<{ senha: string; confirmacao: string }>({
+    defaultValues: { senha: '', confirmacao: '' },
   });
+  const carregando = formState.isSubmitting;
   const [aviso, definirAviso] = useState<Aviso | null>(null);
   const [redefinida, definirRedefinida] = useState(false);
-  const [carregando, definirCarregando] = useState(false);
 
-  async function redefinir() {
-    const encontrados = {
-      senha: validarSenha(senha),
-      confirmacao: validarConfirmacaoSenha(senha, confirmacao),
-    };
-    definirErros(encontrados);
+  const redefinir = handleSubmit(async ({ senha }) => {
     definirAviso(null);
-    if (encontrados.senha || encontrados.confirmacao || carregando) return;
-
-    definirCarregando(true);
     const resultado = await api('/auth/redefinir-senha', 'POST', { token, nova_senha: senha });
-    definirCarregando(false);
     definirRedefinida(resultado.ok);
     definirAviso(
       resultado.ok
@@ -51,7 +38,7 @@ export default function TelaRedefinirSenha() {
           }
         : { tom: 'erro', titulo: 'Não foi possível redefinir', mensagem: resultado.erro },
     );
-  }
+  });
 
   return (
     <FundoGradiente aoVoltar={() => router.replace('/login')} rotuloVoltar="Voltar ao login">
@@ -70,36 +57,30 @@ export default function TelaRedefinirSenha() {
         ) : null}
 
         <View style={styles.campos}>
-          <CampoTexto
+          <CampoTextoControlado
+            controle={control}
+            nome="senha"
+            validar={validarSenha}
             rotulo="Nova senha"
             icone="lock-closed-outline"
-            placeholder="Nova senha"
-            value={senha}
-            onChangeText={(valor) => {
-              definirSenha(valor);
-              definirErros((atuais) => ({ ...atuais, senha: null }));
-            }}
-            erro={erros.senha}
+            placeholder="Senha"
             secureTextEntry
             autoCapitalize="none"
             editable={!carregando && !redefinida}
           />
 
-          <CampoTexto
+          <CampoTextoControlado
+            controle={control}
+            nome="confirmacao"
+            validar={(confirmacao, valores) => validarConfirmacaoSenha(valores.senha, confirmacao)}
             rotulo="Confirmar nova senha"
             icone="lock-closed-outline"
-            placeholder="Digite novamente"
-            value={confirmacao}
-            onChangeText={(valor) => {
-              definirConfirmacao(valor);
-              definirErros((atuais) => ({ ...atuais, confirmacao: null }));
-            }}
-            erro={erros.confirmacao}
+            placeholder="Repita a senha"
             secureTextEntry
             autoCapitalize="none"
             editable={!carregando && !redefinida}
             returnKeyType="go"
-            onSubmitEditing={redefinir}
+            onSubmitEditing={() => void redefinir()}
           />
         </View>
 
@@ -115,7 +96,7 @@ export default function TelaRedefinirSenha() {
             titulo="Redefinir senha"
             tituloCarregando="Salvando..."
             carregando={carregando}
-            aoTocar={redefinir}
+            aoTocar={() => void redefinir()}
             style={styles.botao}
           />
         )}

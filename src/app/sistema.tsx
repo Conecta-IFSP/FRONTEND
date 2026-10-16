@@ -1,8 +1,3 @@
-/**
- * Painel do administrador do sistema: status do servidor (memória, CPU e
- * banco de dados), relatórios gerais, dados de teste e reset completo.
- */
-
 import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
@@ -35,14 +30,12 @@ type Relatorios = {
   comissoes: { total: number; ativas: number };
 };
 
-/** Formata segundos de uptime como "Xh Ymin", já que o servidor devolve o total em segundos. */
 function formatarTempoAtivo(segundos: number) {
   const horas = Math.floor(segundos / 3600);
   const minutos = Math.floor((segundos % 3600) / 60);
   return `${horas}h ${minutos}min`;
 }
 
-/** Um número/rótulo dentro da grade — rótulo curto em cima, valor embaixo, sem depender de largura de texto. */
 function Metrica({ rotulo, valor }: { rotulo: string; valor: string }) {
   const { cores } = useTema().tema;
   return (
@@ -55,7 +48,6 @@ function Metrica({ rotulo, valor }: { rotulo: string; valor: string }) {
   );
 }
 
-/** Uma coluna de relatório: título do tópico (Usuários/Organizações/Comissões) com seus números empilhados embaixo. */
 function ColunaRelatorio({ titulo, itens }: { titulo: string; itens: { rotulo: string; valor: string }[] }) {
   const { cores } = useTema().tema;
   return (
@@ -89,7 +81,6 @@ export default function TelaSistema() {
   const [confirmacaoTeste, definirConfirmacaoTeste] = useState(false);
 
   const carregar = useCallback(async () => {
-    definirCarregando(true);
     const [resultadoStatus, resultadoRelatorios] = await Promise.all([
       api<Status>('/sistema/status'),
       api<Relatorios>('/sistema/relatorios'),
@@ -142,14 +133,14 @@ export default function TelaSistema() {
 
     definirAviso(
       resultado.ok
-        ? { tom: 'sucesso', titulo: 'Sistema resetado', mensagem: 'Usuários, organizações e comissões foram apagados (o administrador do sistema foi mantido).' }
+        ? { tom: 'sucesso', titulo: 'Sistema resetado', mensagem: 'Usuários, organizações e comissões apagados.' }
         : { tom: 'erro', titulo: 'Não foi possível resetar', mensagem: resultado.erro },
     );
     if (resultado.ok) void carregar();
   }
 
   return (
-    <TelaComCabecalho titulo="Sistema">
+    <TelaComCabecalho titulo="Sistema" aoAtualizar={carregar}>
       {aviso ? <FaixaAviso aviso={aviso} /> : null}
 
       {carregando ? (
@@ -221,7 +212,7 @@ export default function TelaSistema() {
       <Confirmacao
         mensagem={
           confirmacaoTeste
-            ? 'Isso vai criar 3 usuários de teste (sem vínculo, em organização e em organização + comissão). Deseja continuar?'
+            ? 'Criar 3 usuários de teste?'
             : undefined
         }
         confirmar={popularDadosDeTeste}
@@ -232,7 +223,7 @@ export default function TelaSistema() {
       <Confirmacao
         mensagem={
           confirmacaoReset
-            ? 'Isso vai apagar todos os usuários (exceto o administrador do sistema), organizações e comissões. Deseja continuar?'
+            ? 'Apagar todos os usuários, organizações e comissões? O administrador do sistema será mantido.'
             : undefined
         }
         confirmar={resetarSistema}

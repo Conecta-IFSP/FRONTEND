@@ -1,10 +1,5 @@
-/**
- * Tela de início. O usuário acompanha as organizações em que tem vínculo e a
- * situação de cada uma; o administrador do sistema vê só o gerenciamento.
- */
-
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,9 +7,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { Botao } from '@/components/Botao';
 import { Carregando } from '@/components/Carregando';
 import { Cartao } from '@/components/Cartao';
+import { Confirmacao } from '@/components/Confirmacao';
 import { EstadoVazio } from '@/components/EstadoVazio';
 import { Etiqueta, type TomEtiqueta } from '@/components/Etiqueta';
-import { FaixaAviso } from '@/components/FaixaAviso';
+import { FaixaAviso, type Aviso } from '@/components/FaixaAviso';
 import { ItemMenu } from '@/components/ItemMenu';
 import { Logo } from '@/components/Logo';
 import { ESPACO, FONTES, RAIO, TIPOGRAFIA } from '@/constants/theme';
@@ -46,9 +42,24 @@ const ATALHOS: Atalho[] = [
 
 type Situacao = { texto: string; tom: TomEtiqueta; detalhe?: string; ordem: number };
 
-/** Como a organização aparece para o usuário, conforme o papel dele e a situação do cadastro. */
 function situacaoDa(organizacao: Organizacao): Situacao {
   const vinculo = organizacao.meu_vinculo;
+
+  if (vinculo?.status === 'CONVIDADO') {
+    return organizacao.status === 'APROVADA'
+      ? {
+          texto: 'Convite recebido',
+          tom: 'primaria',
+          detalhe: 'Um administrador convidou você para participar desta organização.',
+          ordem: -1,
+        }
+      : {
+          texto: 'Convite indisponível',
+          tom: 'erro',
+          detalhe: 'Este convite não está mais disponível.',
+          ordem: 5,
+        };
+  }
 
   if (vinculo?.papel === 'ADMIN') {
     if (organizacao.status === 'PENDENTE') {
@@ -83,12 +94,12 @@ function situacaoDa(organizacao: Organizacao): Situacao {
   return { texto: 'Membro', tom: 'sucesso', ordem: 2 };
 }
 
+function participa(organizacao: Organizacao) {
+  return organizacao.status === 'APROVADA' && organizacao.meu_vinculo?.status === 'APROVADO';
+}
+
 function administra(organizacao: Organizacao) {
-  return (
-    organizacao.status === 'APROVADA' &&
-    organizacao.meu_vinculo?.papel === 'ADMIN' &&
-    organizacao.meu_vinculo.status === 'APROVADO'
-  );
+  return participa(organizacao) && organizacao.meu_vinculo?.papel === 'ADMIN';
 }
 
 export default function TelaInicio() {
@@ -101,48 +112,81 @@ export default function TelaInicio() {
   const [organizacoes, definirOrganizacoes] = useState<Organizacao[]>([]);
   const [solicitacoes, definirSolicitacoes] = useState<Record<string, number>>({});
   const [carregando, definirCarregando] = useState(true);
+  const [atualizando, definirAtualizando] = useState(false);
   const [erro, definirErro] = useState('');
+  const [aviso, definirAviso] = useState<Aviso | null>(null);
+  const [respondendoId, definirRespondendoId] = useState<string | null>(null);
+  const [conviteRecusado, definirConviteRecusado] = useState<Organizacao | null>(null);
+
+  const carregar = useCallback(
+    async (continuar: () => boolean = () => true) => {
+      const resultado = await api<Organizacao[]>('/organizacoes');
+      if (!continuar()) return;
+      if (!resultado.ok) {
+        definirCarregando(false);
+        definirErro(resultado.erro);
+        return;
+      }
+
+      const lista = administradorDoSistema
+        ? resultado.dados
+        : resultado.dados.filter((item) => item.meu_vinculo && !(item.meu_vinculo.papel === 'MEMBRO' && (item.meu_vinculo.status === 'PENDENTE' || item.meu_vinculo.status === 'REJEITADO')));
+      const administradas = administradorDoSistema ? [] : lista.filter(administra);
+      const detalhes = await Promise.all(
+        administradas.map((item) => api<Organizacao>(`/organizacoes/${item._id}`)),
+      );
+      if (!continuar()) return;
+
+      const pendentes: Record<string, number> = {};
+      detalhes.forEach((detalhe, indice) => {
+        if (!detalhe.ok) return;
+        pendentes[administradas[indice]._id] =
+          detalhe.dados.membros?.filter((membro) => membro.status === 'PENDENTE').length ?? 0;
+      });
+
+      definirErro('');
+      definirOrganizacoes(lista);
+      definirSolicitacoes(pendentes);
+      definirCarregando(false);
+    },
+    [administradorDoSistema],
+  );
 
   useFocusEffect(
     useCallback(() => {
       let ativa = true;
-
-      void api<Organizacao[]>('/organizacoes').then(async (resultado) => {
-        if (!ativa) return;
-        if (!resultado.ok) {
-          definirCarregando(false);
-          definirErro(resultado.erro);
-          return;
-        }
-
-        // O administrador do sistema recebe todas; o usuário vê só as que tem vínculo.
-        const lista = administradorDoSistema
-          ? resultado.dados
-          : resultado.dados.filter((item) => item.meu_vinculo && !(item.meu_vinculo.papel === 'MEMBRO' && (item.meu_vinculo.status === 'PENDENTE' || item.meu_vinculo.status === 'REJEITADO')));
-        const administradas = administradorDoSistema ? [] : lista.filter(administra);
-        const detalhes = await Promise.all(
-          administradas.map((item) => api<Organizacao>(`/organizacoes/${item._id}`)),
-        );
-        if (!ativa) return;
-
-        const pendentes: Record<string, number> = {};
-        detalhes.forEach((detalhe, indice) => {
-          if (!detalhe.ok) return;
-          pendentes[administradas[indice]._id] =
-            detalhe.dados.membros?.filter((membro) => membro.status === 'PENDENTE').length ?? 0;
-        });
-
-        definirErro('');
-        definirOrganizacoes(lista);
-        definirSolicitacoes(pendentes);
-        definirCarregando(false);
-      });
-
+      void carregar(() => ativa);
       return () => {
         ativa = false;
       };
-    }, [administradorDoSistema]),
+    }, [carregar]),
   );
+
+  async function atualizar() {
+    definirAtualizando(true);
+    await carregar();
+    definirAtualizando(false);
+  }
+
+  async function responderConvite(organizacao: Organizacao, aceitar: boolean) {
+    definirRespondendoId(organizacao._id);
+    definirAviso(null);
+    const resultado = await api(`/organizacoes/${organizacao._id}/convite`, 'PATCH', { aceitar });
+    definirRespondendoId(null);
+    definirConviteRecusado(null);
+
+    if (!resultado.ok) {
+      definirAviso({ tom: 'erro', titulo: 'Não foi possível responder', mensagem: resultado.erro });
+      return;
+    }
+
+    definirAviso(
+      aceitar
+        ? { tom: 'sucesso', titulo: 'Convite aceito', mensagem: `Agora você é membro de ${organizacao.nome}.` }
+        : { tom: 'sucesso', mensagem: `Convite de ${organizacao.nome} recusado.` },
+    );
+    await carregar();
+  }
 
   const aguardandoAutorizacao = organizacoes.filter((item) => item.status === 'PENDENTE').length;
   const minhas = [...organizacoes].sort((a, b) => situacaoDa(a).ordem - situacaoDa(b).ordem);
@@ -167,7 +211,18 @@ export default function TelaInicio() {
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.conteudo}>
+      <ScrollView
+        contentContainerStyle={styles.conteudo}
+        refreshControl={
+          <RefreshControl
+            refreshing={atualizando}
+            onRefresh={atualizar}
+            colors={[cores.primaria]}
+            tintColor={cores.primaria}
+            progressBackgroundColor={cores.superficie}
+          />
+        }
+      >
         <Text style={[styles.saudacao, { color: cores.texto }]}>
           Olá, {nome?.split(' ')[0] ?? 'bem-vindo'}!
         </Text>
@@ -205,6 +260,7 @@ export default function TelaInicio() {
             </Text>
             <View style={styles.lista}>
               {erro ? <FaixaAviso aviso={{ tom: 'erro', mensagem: erro }} /> : null}
+              {aviso ? <FaixaAviso aviso={aviso} /> : null}
               {carregando ? <Carregando rotulo="Carregando suas organizações" /> : null}
               {!carregando && !erro && minhas.length === 0 ? (
                 <EstadoVazio
@@ -216,13 +272,22 @@ export default function TelaInicio() {
               {minhas.map((item) => {
                 const situacao = situacaoDa(item);
                 const pendentes = solicitacoes[item._id] ?? 0;
+                const membroComum = participa(item) && !administra(item);
 
                 return (
-                  <Cartao key={item._id} style={styles.cartao}
+                  <Cartao
+                    key={item._id}
+                    style={styles.cartao}
                     rotuloAcessivel={`Ver minhas comissões em ${item.nome}`}
-                    aoTocar={item.status === 'APROVADA' && item.meu_vinculo?.status === 'APROVADO' && !administra(item)
-                      ? () => router.push({ pathname: '/comissoes/minhas', params: { organizacao_id: item._id } })
-                      : undefined}
+                    aoTocar={
+                      membroComum
+                        ? () =>
+                            router.push({
+                              pathname: '/comissoes/minhas',
+                              params: { organizacao_id: item._id },
+                            })
+                        : undefined
+                    }
                   >
                     <View style={styles.topo}>
                       <View style={[styles.icone, { backgroundColor: cores.primariaSuave }]}>
@@ -240,52 +305,83 @@ export default function TelaInicio() {
                       </Text>
                     ) : null}
 
-                    {item.status === 'APROVADA' && item.meu_vinculo?.status === 'APROVADO' && !administra(item) ? (
+                    {item.meu_vinculo?.status === 'CONVIDADO' ? (
+                      <View style={styles.acoes}>
+                        {item.status === 'APROVADA' ? (
+                          <Botao
+                            titulo="Aceitar"
+                            tituloCarregando="Entrando..."
+                            rotuloAcessivel={`Aceitar o convite de ${item.nome}`}
+                            icone="checkmark"
+                            compacto
+                            carregando={respondendoId === item._id && !conviteRecusado}
+                            desabilitado={respondendoId !== null}
+                            aoTocar={() => responderConvite(item, true)}
+                            style={styles.acao}
+                          />
+                        ) : null}
+                        <Botao
+                          titulo={item.status === 'APROVADA' ? 'Recusar' : 'Descartar convite'}
+                          rotuloAcessivel={`Recusar o convite de ${item.nome}`}
+                          icone="close"
+                          variante="perigo"
+                          compacto
+                          desabilitado={respondendoId !== null}
+                          aoTocar={() => {
+                            definirAviso(null);
+                            definirConviteRecusado(item);
+                          }}
+                          style={styles.acao}
+                        />
+                      </View>
+                    ) : null}
+
+                    {administra(item) && pendentes > 0 ? (
+                      <View style={styles.aviso}>
+                        <Ionicons name="time-outline" size={16} color={cores.alerta} />
+                        <Text style={[styles.textoAviso, { color: cores.alerta }]}>
+                          {pendentes === 1
+                            ? '1 solicitação de acesso aguardando análise.'
+                            : `${pendentes} solicitações de acesso aguardando análise.`}
+                        </Text>
+                      </View>
+                    ) : null}
+
+                    {membroComum ? (
                       <Text style={[styles.texto, { color: cores.primaria }]}>Ver minhas comissões →</Text>
                     ) : null}
+
                     {administra(item) ? (
-                      <>
-                        {pendentes > 0 ? (
-                          <View style={styles.aviso}>
-                            <Ionicons name="time-outline" size={16} color={cores.alerta} />
-                            <Text style={[styles.textoAviso, { color: cores.alerta }]}>
-                              {pendentes === 1
-                                ? '1 solicitação de acesso aguardando análise.'
-                                : `${pendentes} solicitações de acesso aguardando análise.`}
-                            </Text>
-                          </View>
-                        ) : null}
-                        <View style={styles.acoes}>
-                          <Botao
-                            titulo="Comissões"
-                            rotuloAcessivel={`Comissões de ${item.nome}`}
-                            icone="people-outline"
-                            variante="secundario"
-                            compacto
-                            aoTocar={() =>
-                              router.push({
-                                pathname: '/comissoes',
-                                params: { organizacao_id: item._id },
-                              })
-                            }
-                            style={styles.acao}
-                          />
-                          <Botao
-                            titulo="Membros"
-                            rotuloAcessivel={`Membros de ${item.nome}`}
-                            icone="person-add-outline"
-                            variante="secundario"
-                            compacto
-                            aoTocar={() =>
-                              router.push({
-                                pathname: '/organizacoes/membros',
-                                params: { organizacao_id: item._id },
-                              })
-                            }
-                            style={styles.acao}
-                          />
-                        </View>
-                      </>
+                      <View style={styles.acoes}>
+                        <Botao
+                          titulo="Comissões"
+                          rotuloAcessivel={`Comissões de ${item.nome}`}
+                          icone="people-outline"
+                          variante="secundario"
+                          compacto
+                          aoTocar={() =>
+                            router.push({
+                              pathname: '/comissoes',
+                              params: { organizacao_id: item._id },
+                            })
+                          }
+                          style={styles.acao}
+                        />
+                        <Botao
+                          titulo="Membros"
+                          rotuloAcessivel={`Membros de ${item.nome}`}
+                          icone="person-add-outline"
+                          variante="secundario"
+                          compacto
+                          aoTocar={() =>
+                            router.push({
+                              pathname: '/organizacoes/membros',
+                              params: { organizacao_id: item._id },
+                            })
+                          }
+                          style={styles.acao}
+                        />
+                      </View>
                     ) : null}
                   </Cartao>
                 );
@@ -309,6 +405,19 @@ export default function TelaInicio() {
           </>
         )}
       </ScrollView>
+
+      <Confirmacao
+        mensagem={
+          conviteRecusado
+            ? `Recusar o convite de ${conviteRecusado.nome}?`
+            : undefined
+        }
+        carregando={respondendoId !== null}
+        cancelar={() => definirConviteRecusado(null)}
+        confirmar={() => {
+          if (conviteRecusado) void responderConvite(conviteRecusado, false);
+        }}
+      />
     </SafeAreaView>
   );
 }

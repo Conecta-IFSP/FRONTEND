@@ -1,13 +1,12 @@
-/** Tela do administrador do sistema: autoriza, revoga, edita e exclui as organizações. */
-
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useForm, useWatch } from 'react-hook-form';
 
 import { Botao } from '@/components/Botao';
 import { BotaoIcone } from '@/components/BotaoIcone';
-import { CampoTexto } from '@/components/CampoTexto';
+import { CampoTexto, CampoTextoControlado } from '@/components/CampoTexto';
 import { Carregando } from '@/components/Carregando';
 import { Cartao } from '@/components/Cartao';
 import { Confirmacao } from '@/components/Confirmacao';
@@ -30,8 +29,11 @@ const SITUACOES: Record<Organizacao['status'], { texto: string; tom: TomEtiqueta
   REVOGADA: { texto: 'Revogada', tom: 'erro' },
 };
 
-/** As que aguardam autorização aparecem primeiro. */
 const ORDEM: Record<Organizacao['status'], number> = { PENDENTE: 0, APROVADA: 1, REVOGADA: 2 };
+
+const ATRASO_BUSCA_MS = 350;
+
+type AcaoPendente = { organizacao: Organizacao; tipo: 'revogar' | 'excluir' };
 
 export default function TelaGerenciarOrganizacoes() {
   const router = useRouter();
@@ -42,35 +44,47 @@ export default function TelaGerenciarOrganizacoes() {
   const [salvandoId, definirSalvandoId] = useState<string | null>(null);
   const [erro, definirErro] = useState('');
   const [editandoId, definirEditandoId] = useState<string | null>(null);
-  const [nome, definirNome] = useState('');
-  const [descricao, definirDescricao] = useState('');
-  const [excluindo, definirExcluindo] = useState<Organizacao | null>(null);
-
-  const erroNome = validarNomeOrganizacao(nome);
-  const erroDescricao = validarDescricao(descricao);
+  const edicao = useForm<{ nome: string; descricao: string }>({
+    mode: 'onChange',
+    defaultValues: { nome: '', descricao: '' },
+  });
+  const descricao = useWatch({ control: edicao.control, name: 'descricao' });
+  const [acaoPendente, definirAcaoPendente] = useState<AcaoPendente | null>(null);
+  const [busca, definirBusca] = useState('');
+  const [termo, definirTermo] = useState('');
+  const ultimaConsulta = useRef(0);
 
   useEffect(() => {
     let ativa = true;
-
-    void Promise.all([
-      api<{ tipo: string }>('/usuarios/me'),
-      api<Organizacao[]>('/organizacoes'),
-    ]).then(([usuario, resultado]) => {
-      if (!ativa) return;
-      // Exclusiva do administrador do sistema, mesmo quando aberta por um link direto.
-      if (usuario.ok && usuario.dados.tipo !== 'ADMIN_SISTEMA') {
-        router.replace('/inicio');
-        return;
-      }
-      definirCarregando(false);
-      if (resultado.ok) definirOrganizacoes(resultado.dados);
-      else definirErro(resultado.erro);
+    void api<{ tipo: string }>('/usuarios/me').then((usuario) => {
+      if (ativa && usuario.ok && usuario.dados.tipo !== 'ADMIN_SISTEMA') router.replace('/inicio');
     });
-
     return () => {
       ativa = false;
     };
   }, [router]);
+
+  const carregar = useCallback(async (termoBusca: string) => {
+    const consulta = ++ultimaConsulta.current;
+    const resultado = await api<Organizacao[]>(
+      termoBusca ? `/organizacoes?busca=${encodeURIComponent(termoBusca)}` : '/organizacoes',
+    );
+    if (consulta !== ultimaConsulta.current) return;
+    definirCarregando(false);
+    definirTermo(termoBusca);
+    if (resultado.ok) {
+      definirErro('');
+      definirOrganizacoes(resultado.dados);
+    } else {
+      definirErro(resultado.erro);
+    }
+  }, []);
+
+  useEffect(() => {
+    const termoBusca = busca.trim();
+    const espera = setTimeout(() => void carregar(termoBusca), termoBusca ? ATRASO_BUSCA_MS : 0);
+    return () => clearTimeout(espera);
+  }, [busca, carregar]);
 
   async function atualizar(id: string, dados: Partial<Organizacao>) {
     definirSalvandoId(id);
@@ -89,19 +103,18 @@ export default function TelaGerenciarOrganizacoes() {
     return true;
   }
 
-  async function salvarEdicao(id: string) {
-    if (erroNome || erroDescricao) return;
-    if (await atualizar(id, { nome: nome.trim(), descricao: descricao.trim() })) {
+  const salvarEdicao = edicao.handleSubmit(async (dados) => {
+    if (!editandoId) return;
+    if (await atualizar(editandoId, { nome: dados.nome.trim(), descricao: dados.descricao.trim() })) {
       definirEditandoId(null);
     }
-  }
+  });
 
   async function excluir(organizacao: Organizacao) {
     definirSalvandoId(organizacao._id);
     definirErro('');
     const resultado = await api(`/organizacoes/${organizacao._id}`, 'DELETE');
     definirSalvandoId(null);
-    definirExcluindo(null);
 
     if (!resultado.ok) {
       definirErro(resultado.erro);
@@ -111,14 +124,34 @@ export default function TelaGerenciarOrganizacoes() {
     definirOrganizacoes((lista) => lista.filter((item) => item._id !== organizacao._id));
   }
 
+  async function confirmarAcao() {
+    if (!acaoPendente) return;
+    const { organizacao, tipo } = acaoPendente;
+    if (tipo === 'revogar') await atualizar(organizacao._id, { status: 'REVOGADA' });
+    else await excluir(organizacao);
+    definirAcaoPendente(null);
+  }
+
   const ordenadas = [...organizacoes].sort((a, b) => ORDEM[a.status] - ORDEM[b.status]);
 
   return (
-    <TelaComCabecalho titulo="Gerenciar organizações">
+    <TelaComCabecalho titulo="Gerenciar organizações" aoAtualizar={() => carregar(busca.trim())}>
+      <CampoTexto
+        rotulo="Buscar organização"
+        icone="search-outline"
+        value={busca}
+        onChangeText={definirBusca}
+        autoCorrect={false}
+        returnKeyType="search"
+      />
+
       {erro ? <FaixaAviso aviso={{ tom: 'erro', mensagem: erro }} /> : null}
       {carregando ? <Carregando rotulo="Carregando organizações" /> : null}
       {!carregando && organizacoes.length === 0 ? (
-        <EstadoVazio icone="business-outline" mensagem="Nenhuma organização cadastrada." />
+        <EstadoVazio
+          icone={termo ? 'search-outline' : 'business-outline'}
+          mensagem={termo ? `Nenhuma organização encontrada para "${termo}".` : 'Nenhuma organização cadastrada.'}
+        />
       ) : null}
 
       {ordenadas.map((organizacao) => {
@@ -129,20 +162,20 @@ export default function TelaGerenciarOrganizacoes() {
           return (
             <Cartao key={organizacao._id} style={styles.cartao}>
               <Text style={[styles.nome, { color: cores.texto }]}>Editar organização</Text>
-              <CampoTexto
+              <CampoTextoControlado
+                controle={edicao.control}
+                nome="nome"
+                validar={validarNomeOrganizacao}
                 rotulo="Nome"
                 icone="business-outline"
-                value={nome}
-                onChangeText={definirNome}
-                erro={erroNome}
                 editable={!salvando}
               />
-              <CampoTexto
+              <CampoTextoControlado
+                controle={edicao.control}
+                nome="descricao"
+                validar={validarDescricao}
                 rotulo="Descrição"
                 icone="document-text-outline"
-                value={descricao}
-                onChangeText={definirDescricao}
-                erro={erroDescricao}
                 dica={`${descricao.trim().length}/${TAMANHO_MAXIMO_DESCRICAO}`}
                 multiline
                 maxLength={TAMANHO_MAXIMO_DESCRICAO}
@@ -153,9 +186,9 @@ export default function TelaGerenciarOrganizacoes() {
                   titulo="Salvar"
                   tituloCarregando="Salvando..."
                   carregando={salvando}
-                  desabilitado={Boolean(erroNome) || Boolean(erroDescricao)}
+                  desabilitado={!edicao.formState.isValid}
                   compacto
-                  aoTocar={() => salvarEdicao(organizacao._id)}
+                  aoTocar={() => void salvarEdicao()}
                   style={styles.botao}
                 />
                 <Botao
@@ -185,8 +218,7 @@ export default function TelaGerenciarOrganizacoes() {
                 desabilitado={salvando}
                 aoTocar={() => {
                   definirEditandoId(organizacao._id);
-                  definirNome(organizacao.nome);
-                  definirDescricao(organizacao.descricao ?? '');
+                  edicao.reset({ nome: organizacao.nome, descricao: organizacao.descricao ?? '' });
                 }}
               />
             </View>
@@ -216,11 +248,12 @@ export default function TelaGerenciarOrganizacoes() {
               {organizacao.status !== 'REVOGADA' ? (
                 <Botao
                   titulo="Revogar"
+                  rotuloAcessivel={`Revogar ${organizacao.nome}`}
                   icone="ban-outline"
                   variante="perigo"
                   compacto
                   desabilitado={salvando}
-                  aoTocar={() => atualizar(organizacao._id, { status: 'REVOGADA' })}
+                  aoTocar={() => definirAcaoPendente({ organizacao, tipo: 'revogar' })}
                   style={styles.botao}
                 />
               ) : (
@@ -231,7 +264,7 @@ export default function TelaGerenciarOrganizacoes() {
                   variante="perigo"
                   compacto
                   desabilitado={salvando}
-                  aoTocar={() => definirExcluindo(organizacao)}
+                  aoTocar={() => definirAcaoPendente({ organizacao, tipo: 'excluir' })}
                   style={styles.botao}
                 />
               )}
@@ -242,15 +275,15 @@ export default function TelaGerenciarOrganizacoes() {
 
       <Confirmacao
         mensagem={
-          excluindo
-            ? `Excluir ${excluindo.nome}? A organização e as comissões dela serão apagadas de vez.`
-            : undefined
+          acaoPendente?.tipo === 'revogar'
+            ? `Revogar ${acaoPendente.organizacao.nome}? Ela poderá ser autorizada novamente depois.`
+            : acaoPendente?.tipo === 'excluir'
+              ? `Excluir ${acaoPendente.organizacao.nome}? A organização e suas comissões serão excluídas permanentemente.`
+              : undefined
         }
         carregando={salvandoId !== null}
-        cancelar={() => definirExcluindo(null)}
-        confirmar={() => {
-          if (excluindo) void excluir(excluindo);
-        }}
+        cancelar={() => definirAcaoPendente(null)}
+        confirmar={() => void confirmarAcao()}
       />
     </TelaComCabecalho>
   );
