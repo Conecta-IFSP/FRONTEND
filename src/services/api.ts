@@ -117,3 +117,34 @@ export type Comissao = {
   organizacao_id: { _id: string; nome: string };
   membros: { usuario_id: PessoaComissao | null; papel: PapelComissao }[];
 };
+
+export type RespostaConvite = 'PENDENTE' | 'ACEITO' | 'RECUSADO';
+
+export type SituacaoPresenca = 'AGUARDANDO' | 'CONFIRMADA' | 'RECUSADA';
+
+export type Presenca = {
+  entrada: string;
+  saida?: string;
+  situacao: SituacaoPresenca;
+  marcada_por: 'PROPRIO' | 'RESPONSAVEL';
+};
+
+export type Participante = {
+  usuario_id: PessoaComissao | null;
+  convite: RespostaConvite;
+  presenca?: Presenca;
+};
+
+export type Reuniao = {
+  _id: string;
+  comissao_id: { _id: string; nome: string; organizacao_id: string } | null;
+  titulo: string;
+  local: string;
+  inicio: string;
+  fim: string;
+  pauta: string[];
+  criada_por: string;
+  situacao: 'AGENDADA' | 'CANCELADA';
+  participantes: Participante[];
+  sou_dono: boolean;
+};

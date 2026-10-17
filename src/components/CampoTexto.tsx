@@ -16,9 +16,11 @@ type CampoTextoProps = TextInputProps & {
     aoTocar: () => void;
   };
   dica?: string;
+  compacto?: boolean;
 };
 
 const ALTURA = 56;
+const ALTURA_COMPACTA = 48;
 const ALTURA_MULTILINHA = 120;
 
 export const CampoTexto = forwardRef<TextInput, CampoTextoProps>(function CampoTexto(
@@ -28,6 +30,7 @@ export const CampoTexto = forwardRef<TextInput, CampoTextoProps>(function CampoT
     erro = null,
     acaoFinal,
     dica,
+    compacto = false,
     multiline = false,
     placeholder,
     value,
@@ -46,12 +49,13 @@ export const CampoTexto = forwardRef<TextInput, CampoTextoProps>(function CampoT
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.rotulo, { color: cores.textoSuave }]}>{rotulo}</Text>
+      <Text style={[styles.rotulo, { color: compacto ? cores.texto : cores.textoSuave }]}>{rotulo}</Text>
 
       <View
         style={[
           styles.caixa,
           multiline ? styles.caixaMultilinha : styles.caixaLinha,
+          compacto ? (multiline ? styles.caixaCompactaMultilinha : styles.caixaCompacta) : null,
           { backgroundColor: cores.campoFundo, borderColor: destaque ?? cores.campoBorda },
         ]}
       >
@@ -151,12 +155,14 @@ type CampoTextoControladoProps<T extends FieldValues> = Omit<
   controle: Control<T>;
   nome: FieldPath<T>;
   validar?: (valor: string, valores: T) => string | null;
+  formatar?: (valor: string) => string;
 };
 
 export function CampoTextoControlado<T extends FieldValues>({
   controle,
   nome,
   validar,
+  formatar,
   onBlur,
   ...props
 }: CampoTextoControladoProps<T>) {
@@ -176,13 +182,70 @@ export function CampoTextoControlado<T extends FieldValues>({
       {...props}
       ref={ref}
       value={String(value ?? '')}
-      onChangeText={onChange}
+      onChangeText={formatar ? (texto) => onChange(formatar(texto)) : onChange}
       onBlur={(evento) => {
         marcarTocado();
         onBlur?.(evento);
       }}
       erro={error?.message ?? null}
     />
+  );
+}
+
+type CampoSelecaoProps = {
+  rotulo: string;
+  valor: string;
+  aoTocar: () => void;
+  icone?: keyof typeof Ionicons.glyphMap;
+  detalhe?: string;
+  desabilitado?: boolean;
+  compacto?: boolean;
+};
+
+export function CampoSelecao({
+  rotulo,
+  valor,
+  aoTocar,
+  icone,
+  detalhe,
+  desabilitado = false,
+  compacto = false,
+}: CampoSelecaoProps) {
+  const { cores } = useTema().tema;
+
+  return (
+    <View style={styles.container}>
+      <Text style={[styles.rotulo, { color: compacto ? cores.texto : cores.textoSuave }]}>{rotulo}</Text>
+      <Pressable
+        onPress={aoTocar}
+        disabled={desabilitado}
+        accessibilityRole="button"
+        accessibilityLabel={`${rotulo}: ${valor}${detalhe ? `, ${detalhe}` : ''}`}
+        style={({ pressed }) => [
+          styles.caixa,
+          detalhe ? styles.caixaSelecaoDupla : styles.caixaLinha,
+          compacto ? (detalhe ? styles.caixaCompactaMultilinha : styles.caixaCompacta) : null,
+          {
+            backgroundColor: cores.campoFundo,
+            borderColor: cores.campoBorda,
+            opacity: desabilitado ? 0.55 : pressed ? 0.85 : 1,
+          },
+        ]}
+      >
+        {icone ? <Ionicons name={icone} size={20} color={cores.textoSutil} /> : null}
+        <View style={[styles.areaEntrada, icone ? styles.entradaComIcone : null]}>
+          <Text numberOfLines={1} style={[styles.textoSelecao, { color: cores.texto }]}>
+            {valor}
+          </Text>
+          {detalhe ? (
+            <Text numberOfLines={1} style={[styles.dica, { color: cores.textoSuave }]}>
+              {detalhe}
+            </Text>
+          ) : null}
+        </View>
+        <Ionicons name="chevron-down" size={18} color={cores.textoSutil} />
+      </Pressable>
+    </View>
   );
 }
 
@@ -197,6 +260,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: ESPACO.md,
   },
   caixaLinha: { height: ALTURA, alignItems: 'center' },
+  caixaCompacta: { height: ALTURA_COMPACTA, borderRadius: RAIO.md, paddingHorizontal: ESPACO.md - 2 },
+  caixaCompactaMultilinha: { borderRadius: RAIO.md, paddingHorizontal: ESPACO.md - 2 },
+  caixaSelecaoDupla: { minHeight: 64, alignItems: 'center', paddingVertical: ESPACO.sm },
+  textoSelecao: { fontFamily: FONTES.corpo, fontSize: 15, lineHeight: 22 },
   caixaMultilinha: {
     minHeight: ALTURA_MULTILINHA,
     alignItems: 'flex-start',

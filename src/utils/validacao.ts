@@ -47,6 +47,45 @@ export function validarNomeComissao(nome: string) {
   return null;
 }
 
+export function validarTituloReuniao(titulo: string) {
+  if (titulo.trim().length < 3) return 'Informe um título com pelo menos 3 caracteres.';
+  return null;
+}
+
+export function validarLocal(local: string) {
+  if (local.trim().length < 2) return 'Informe o local da reunião.';
+  return null;
+}
+
+export function minutosDaHora(texto: string) {
+  const partes = /^(\d{2}):(\d{2})$/.exec(texto);
+  if (!partes) return null;
+  const horas = Number(partes[1]);
+  const minutos = Number(partes[2]);
+  return horas > 23 || minutos > 59 ? null : horas * 60 + minutos;
+}
+
+export function mascararHora(texto: string) {
+  const digitos = texto.replace(/\D/g, '').slice(0, 4);
+  return digitos.length > 2 ? `${digitos.slice(0, 2)}:${digitos.slice(2)}` : digitos;
+}
+
+export function validarHora(texto: string) {
+  if (texto.length === 0) return 'Informe o horário.';
+  if (minutosDaHora(texto) === null) return 'Horário inválido.';
+  return null;
+}
+
+export function validarTermino(inicio: string, fim: string) {
+  const erro = validarHora(fim);
+  if (erro) return erro;
+  const minutosInicio = minutosDaHora(inicio);
+  if (minutosInicio !== null && (minutosDaHora(fim) ?? 0) <= minutosInicio) {
+    return 'O término deve ser depois do início.';
+  }
+  return null;
+}
+
 export function validarDescricao(descricao: string) {
   if (descricao.trim().length > TAMANHO_MAXIMO_DESCRICAO) {
     return `A descrição deve ter no máximo ${TAMANHO_MAXIMO_DESCRICAO} caracteres.`;

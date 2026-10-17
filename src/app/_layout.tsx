@@ -58,7 +58,7 @@ function Navegacao() {
         </Stack.Protected>
         <Stack.Screen name="login/redefinir-senha" />
         <Stack.Protected guard={Boolean(usuario)}>
-          <Stack.Screen name="inicio" />
+          <Stack.Screen name="(abas)" />
           <Stack.Screen name="perfil" />
           <Stack.Screen name="login/alterar-senha" />
         </Stack.Protected>
@@ -74,6 +74,8 @@ function Navegacao() {
           <Stack.Screen name="comissoes/minhas" />
           <Stack.Screen name="comissoes/nova" />
           <Stack.Screen name="comissoes/[id]" />
+          <Stack.Screen name="reunioes/nova" />
+          <Stack.Screen name="reunioes/[id]" />
         </Stack.Protected>
       </Stack>
     </>

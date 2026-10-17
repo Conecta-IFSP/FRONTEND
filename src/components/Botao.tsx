@@ -22,6 +22,7 @@ type BotaoProps = {
   tituloCarregando?: string;
   desabilitado?: boolean;
   compacto?: boolean;
+  pilula?: boolean;
   rotuloAcessivel?: string;
   style?: StyleProp<ViewStyle>;
 };
@@ -37,14 +38,66 @@ export function Botao({
   tituloCarregando,
   desabilitado = false,
   compacto = false,
+  pilula = false,
   rotuloAcessivel,
   style,
 }: BotaoProps) {
   const { tema } = useTema();
+  const { cores } = tema;
   const bloqueado = desabilitado || carregando;
   const primario = variante === 'primario';
   const perigo = variante === 'perigo';
-  const corTexto = primario ? MARCA.branco : perigo ? tema.cores.erro : tema.cores.primaria;
+
+  if (pilula) {
+    const altura = compacto ? 40 : 48;
+    const aparencia = primario
+      ? { fundo: cores.primaria, pressionado: cores.primariaPressionada, texto: cores.textoSobrePrimaria }
+      : perigo
+        ? { fundo: cores.erroSuave, pressionado: cores.erroSuave, texto: cores.erro }
+        : { fundo: cores.primariaSuave, pressionado: cores.primariaSuave, texto: cores.primaria };
+
+    return (
+      <Pressable
+        onPress={aoTocar}
+        disabled={bloqueado}
+        accessibilityRole="button"
+        accessibilityLabel={rotuloAcessivel ?? titulo}
+        accessibilityState={{ disabled: bloqueado, busy: carregando }}
+        style={({ pressed }) => [
+          styles.conteudo,
+          {
+            height: altura,
+            borderRadius: altura / 2,
+            backgroundColor: desabilitado && !carregando ? cores.desabilitado : pressed ? aparencia.pressionado : aparencia.fundo,
+            opacity: pressed && !primario ? 0.8 : 1,
+          },
+          style,
+        ]}
+      >
+        {carregando ? (
+          <ActivityIndicator color={aparencia.texto} />
+        ) : icone ? (
+          <Ionicons
+            name={icone}
+            size={compacto ? 18 : 20}
+            color={desabilitado ? cores.desabilitadoTexto : aparencia.texto}
+          />
+        ) : null}
+        <Text
+          style={[
+            styles.textoPilula,
+            compacto ? styles.textoCompacto : null,
+            { color: desabilitado && !carregando ? cores.desabilitadoTexto : aparencia.texto },
+          ]}
+          numberOfLines={1}
+        >
+          {carregando && tituloCarregando ? tituloCarregando : titulo}
+        </Text>
+      </Pressable>
+    );
+  }
+
+  const corTexto = primario ? MARCA.branco : perigo ? cores.erro : cores.primaria;
   const altura = (compacto ? 44 : 56) - (primario ? 0 : 2 * BORDA);
 
   const conteudo = (
@@ -77,8 +130,8 @@ export function Botao({
           ? null
           : {
               borderWidth: BORDA,
-              borderColor: perigo ? tema.cores.erro : tema.cores.borda,
-              backgroundColor: tema.cores.superficie,
+              borderColor: perigo ? cores.erro : cores.borda,
+              backgroundColor: cores.superficie,
             },
         style,
       ]}
@@ -104,5 +157,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: ESPACO.md,
   },
   texto: { ...TIPOGRAFIA.botao },
+  textoPilula: { ...TIPOGRAFIA.botao, fontSize: 15, lineHeight: 22 },
   textoCompacto: { fontSize: 14, lineHeight: 20 },
 });

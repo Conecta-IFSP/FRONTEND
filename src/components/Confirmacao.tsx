@@ -1,8 +1,6 @@
-import { Modal, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Botao } from '@/components/Botao';
-import { ESPACO, RAIO, TIPOGRAFIA } from '@/constants/theme';
+import { ESPACO, FONTES, RAIO, TIPOGRAFIA } from '@/constants/theme';
 import { useTema } from '@/contexts/TemaContext';
 
 type ConfirmacaoProps = {
@@ -10,11 +8,22 @@ type ConfirmacaoProps = {
   confirmar: () => void;
   cancelar: () => void;
   carregando: boolean;
+  rotuloConfirmar?: string;
+  perigo?: boolean;
 };
 
-export function Confirmacao({ mensagem, confirmar, cancelar, carregando }: ConfirmacaoProps) {
+export function Confirmacao({
+  mensagem,
+  confirmar,
+  cancelar,
+  carregando,
+  rotuloConfirmar = 'Confirmar',
+  perigo = false,
+}: ConfirmacaoProps) {
   const { tema } = useTema();
   const { cores } = tema;
+  const corAcao = perigo ? cores.erro : cores.primaria;
+  const fundoAcao = perigo ? cores.erroSuave : cores.primariaSuave;
 
   return (
     <Modal
@@ -28,26 +37,32 @@ export function Confirmacao({ mensagem, confirmar, cancelar, carregando }: Confi
       <View style={[styles.sobreposicao, { backgroundColor: cores.sobreposicao }]}>
         <View
           accessibilityViewIsModal
+          accessibilityRole="alert"
           style={[styles.dialogo, { backgroundColor: cores.superficie }, tema.sombra]}
         >
-          <View style={[styles.icone, { backgroundColor: cores.alertaSuave }]}>
-            <Ionicons name="alert-circle" size={26} color={cores.alerta} />
-          </View>
-          <Text style={[styles.titulo, { color: cores.texto }]}>Confirmar alteração</Text>
-          <Text style={[styles.mensagem, { color: cores.textoSuave }]}>{mensagem}</Text>
+          <Text style={[styles.mensagem, { color: cores.texto }]}>{mensagem}</Text>
           <View style={styles.botoes}>
-            <Botao
-              titulo="Confirmar"
-              tituloCarregando="Salvando..."
-              carregando={carregando}
-              aoTocar={confirmar}
-            />
-            <Botao
-              titulo="Cancelar"
-              variante="secundario"
-              desabilitado={carregando}
-              aoTocar={cancelar}
-            />
+            <Pressable
+              onPress={cancelar}
+              disabled={carregando}
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.botao, { opacity: pressed || carregando ? 0.6 : 1 }]}
+            >
+              <Text style={[styles.textoBotao, { color: cores.primaria }]}>Cancelar</Text>
+            </Pressable>
+            <Pressable
+              onPress={confirmar}
+              disabled={carregando}
+              accessibilityRole="button"
+              accessibilityState={{ busy: carregando }}
+              style={({ pressed }) => [
+                styles.botao,
+                { backgroundColor: fundoAcao, opacity: pressed ? 0.8 : 1 },
+              ]}
+            >
+              {carregando ? <ActivityIndicator size="small" color={corAcao} /> : null}
+              <Text style={[styles.textoBotao, { color: corAcao }]}>{rotuloConfirmar}</Text>
+            </Pressable>
           </View>
         </View>
       </View>
@@ -60,18 +75,20 @@ const styles = StyleSheet.create({
   dialogo: {
     width: '100%',
     maxWidth: 420,
-    alignItems: 'center',
-    padding: ESPACO.lg,
-    borderRadius: RAIO.xl,
+    paddingTop: ESPACO.lg,
+    paddingHorizontal: ESPACO.md + 4,
+    paddingBottom: ESPACO.md,
+    borderRadius: RAIO.xl - 4,
   },
-  icone: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+  mensagem: { ...TIPOGRAFIA.corpo, marginBottom: ESPACO.md + 4 },
+  botoes: { flexDirection: 'row', justifyContent: 'flex-end', gap: ESPACO.sm },
+  botao: {
+    height: 40,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: ESPACO.md,
+    borderRadius: 20,
   },
-  titulo: { ...TIPOGRAFIA.subtitulo, marginTop: ESPACO.md, textAlign: 'center' },
-  mensagem: { ...TIPOGRAFIA.corpoPequeno, marginTop: ESPACO.sm, textAlign: 'center' },
-  botoes: { alignSelf: 'stretch', marginTop: ESPACO.lg, gap: ESPACO.md - 4 },
+  textoBotao: { fontFamily: FONTES.corpoMedio, fontSize: 14, lineHeight: 20 },
 });

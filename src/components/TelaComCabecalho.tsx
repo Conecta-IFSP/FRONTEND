@@ -1,11 +1,11 @@
 import { useState, type ReactNode } from 'react';
-import { RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
-import { BotaoVoltar } from '@/components/BotaoVoltar';
-import { ESPACO, TIPOGRAFIA } from '@/constants/theme';
+import { ESPACO, FONTES } from '@/constants/theme';
 import { useTema } from '@/contexts/TemaContext';
 
 type TelaComCabecalhoProps = {
@@ -13,14 +13,39 @@ type TelaComCabecalhoProps = {
   children: ReactNode;
   aoVoltar?: () => void;
   aoAtualizar?: () => Promise<unknown>;
+  acao?: ReactNode;
+  sobreposto?: ReactNode;
+  subtitulo?: string;
+  iconeVoltar?: 'arrow-back' | 'close';
+  rotuloVoltar?: string;
+  fundo?: 'fundo' | 'superficie';
+  cabecalhoSuperficie?: boolean;
+  divisor?: boolean;
+  rodape?: ReactNode;
 };
 
-export function TelaComCabecalho({ titulo, children, aoVoltar, aoAtualizar }: TelaComCabecalhoProps) {
+export function TelaComCabecalho({
+  titulo,
+  children,
+  aoVoltar,
+  aoAtualizar,
+  acao,
+  sobreposto,
+  subtitulo,
+  iconeVoltar = 'arrow-back',
+  rotuloVoltar,
+  fundo = 'fundo',
+  cabecalhoSuperficie = false,
+  divisor = false,
+  rodape,
+}: TelaComCabecalhoProps) {
   const router = useRouter();
   const { tema } = useTema();
+  const { cores } = tema;
   const [atualizando, definirAtualizando] = useState(false);
   const voltar =
     aoVoltar ?? (() => (router.canGoBack() ? router.back() : router.replace('/inicio')));
+  const corFundo = fundo === 'superficie' ? cores.superficie : cores.fundo;
 
   async function atualizar() {
     if (!aoAtualizar) return;
@@ -34,23 +59,48 @@ export function TelaComCabecalho({ titulo, children, aoVoltar, aoAtualizar }: Te
 
   return (
     <SafeAreaView
-      style={[styles.tela, { backgroundColor: tema.cores.fundo }]}
+      style={[styles.tela, { backgroundColor: cabecalhoSuperficie ? cores.superficie : corFundo }]}
       edges={['top', 'bottom']}
     >
-      <View style={styles.cabecalho}>
-        <BotaoVoltar aoTocar={voltar} />
-        <Text
-          style={[styles.titulo, { color: tema.cores.texto }]}
-          numberOfLines={2}
-          accessibilityRole="header"
+      <View
+        style={[
+          styles.cabecalho,
+          subtitulo ? styles.cabecalhoAlto : null,
+          { backgroundColor: cabecalhoSuperficie ? cores.superficie : corFundo },
+          divisor ? { borderBottomWidth: 1, borderBottomColor: cores.bordaSuave } : null,
+        ]}
+      >
+        <Pressable
+          onPress={voltar}
+          accessibilityRole="button"
+          accessibilityLabel={rotuloVoltar ?? (iconeVoltar === 'close' ? 'Cancelar' : 'Voltar')}
+          hitSlop={4}
+          style={({ pressed }) => [styles.botaoVoltar, { opacity: pressed ? 0.6 : 1 }]}
         >
-          {titulo}
-        </Text>
-        <View style={styles.espaco} />
+          <Ionicons name={iconeVoltar} size={24} color={cores.texto} />
+        </Pressable>
+        <View style={styles.titulos}>
+          <Text
+            style={[styles.titulo, { color: cores.texto }]}
+            numberOfLines={1}
+            accessibilityRole="header"
+          >
+            {titulo}
+          </Text>
+          {subtitulo ? (
+            <View style={styles.subtitulo}>
+              <View style={[styles.ponto, { backgroundColor: cores.primaria }]} />
+              <Text style={[styles.textoSubtitulo, { color: cores.textoSuave }]} numberOfLines={1}>
+                {subtitulo}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+        {acao}
       </View>
 
       <KeyboardAwareScrollView
-        style={styles.tela}
+        style={[styles.tela, { backgroundColor: corFundo }]}
         contentContainerStyle={styles.conteudo}
         keyboardShouldPersistTaps="handled"
         bottomOffset={ESPACO.lg}
@@ -59,15 +109,26 @@ export function TelaComCabecalho({ titulo, children, aoVoltar, aoAtualizar }: Te
             <RefreshControl
               refreshing={atualizando}
               onRefresh={atualizar}
-              colors={[tema.cores.primaria]}
-              tintColor={tema.cores.primaria}
-              progressBackgroundColor={tema.cores.superficie}
+              colors={[cores.primaria]}
+              tintColor={cores.primaria}
+              progressBackgroundColor={cores.superficie}
             />
           ) : undefined
         }
       >
         {children}
       </KeyboardAwareScrollView>
+      {rodape ? (
+        <View
+          style={[
+            styles.rodape,
+            { backgroundColor: cores.superficie, borderTopColor: cores.bordaSuave },
+          ]}
+        >
+          <View style={styles.larguraRodape}>{rodape}</View>
+        </View>
+      ) : null}
+      {sobreposto}
     </SafeAreaView>
   );
 }
@@ -75,20 +136,33 @@ export function TelaComCabecalho({ titulo, children, aoVoltar, aoAtualizar }: Te
 const styles = StyleSheet.create({
   tela: { flex: 1 },
   cabecalho: {
+    height: 56,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: ESPACO.lg,
-    paddingVertical: ESPACO.md,
+    gap: ESPACO.xs,
+    paddingHorizontal: ESPACO.xs,
   },
-  titulo: { ...TIPOGRAFIA.subtitulo, flex: 1, marginHorizontal: ESPACO.sm, textAlign: 'center' },
-  espaco: { width: 44 },
+  cabecalhoAlto: { height: 64 },
+  botaoVoltar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  titulos: { flex: 1, minWidth: 0, paddingRight: ESPACO.sm },
+  titulo: { fontFamily: FONTES.titulo, fontSize: 18, lineHeight: 24 },
+  subtitulo: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  ponto: { width: 8, height: 8, borderRadius: 4 },
+  textoSubtitulo: { fontFamily: FONTES.corpo, fontSize: 13, lineHeight: 18, flexShrink: 1 },
   conteudo: {
     width: '100%',
     maxWidth: 560,
     alignSelf: 'center',
-    paddingHorizontal: ESPACO.lg,
-    paddingTop: ESPACO.xs,
+    paddingHorizontal: ESPACO.md,
+    paddingTop: ESPACO.sm,
     paddingBottom: ESPACO.xxl,
     gap: ESPACO.md,
   },
+  rodape: {
+    paddingHorizontal: ESPACO.md,
+    paddingTop: ESPACO.md - 4,
+    paddingBottom: ESPACO.md,
+    borderTopWidth: 1,
+  },
+  larguraRodape: { width: '100%', maxWidth: 560, alignSelf: 'center' },
 });
