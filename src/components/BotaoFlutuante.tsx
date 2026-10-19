@@ -1,11 +1,11 @@
 import { Pressable, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, type IoniconsIconName } from '@react-native-vector-icons/ionicons';
 
 import { ESPACO, RAIO } from '@/constants/theme';
 import { useTema } from '@/contexts/TemaContext';
 
 type BotaoFlutuanteProps = {
-  icone: keyof typeof Ionicons.glyphMap;
+  icone: IoniconsIconName;
   rotulo: string;
   aoTocar: () => void;
 };

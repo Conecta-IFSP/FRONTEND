@@ -8,7 +8,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, type IoniconsIconName } from '@react-native-vector-icons/ionicons';
 
 import { ESPACO, MARCA, RAIO, TIPOGRAFIA } from '@/constants/theme';
 import { useTema } from '@/contexts/TemaContext';
@@ -17,7 +17,7 @@ type BotaoProps = {
   titulo: string;
   aoTocar: () => void;
   variante?: 'primario' | 'secundario' | 'perigo';
-  icone?: keyof typeof Ionicons.glyphMap;
+  icone?: IoniconsIconName;
   carregando?: boolean;
   tituloCarregando?: string;
   desabilitado?: boolean;

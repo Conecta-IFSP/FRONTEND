@@ -1,11 +1,11 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, type IoniconsIconName } from '@react-native-vector-icons/ionicons';
 
 import { ESPACO, RAIO, TIPOGRAFIA } from '@/constants/theme';
 import { useTema } from '@/contexts/TemaContext';
 
 type EstadoVazioProps = {
-  icone: keyof typeof Ionicons.glyphMap;
+  icone: IoniconsIconName;
   mensagem: string;
 };
 

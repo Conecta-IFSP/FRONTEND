@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import type { IoniconsIconName } from '@react-native-vector-icons/ionicons';
 import { useForm } from 'react-hook-form';
 
 import { Botao } from '@/components/Botao';
@@ -22,7 +22,7 @@ type Perfil = { nome: string; email: string; tema?: string };
 const OPCOES_TEMA: {
   valor: PreferenciaTema;
   titulo: string;
-  icone: keyof typeof Ionicons.glyphMap;
+  icone: IoniconsIconName;
 }[] = [
   { valor: 'sistema', titulo: 'Sistema', icone: 'phone-portrait-outline' },
   { valor: 'claro', titulo: 'Claro', icone: 'sunny-outline' },

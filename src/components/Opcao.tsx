@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, type IoniconsIconName } from '@react-native-vector-icons/ionicons';
 
 import { ESPACO, FONTES, RAIO } from '@/constants/theme';
 import { useTema } from '@/contexts/TemaContext';
@@ -8,7 +8,7 @@ type OpcaoProps = {
   titulo: string;
   selecionado: boolean;
   aoTocar: () => void;
-  icone?: keyof typeof Ionicons.glyphMap;
+  icone?: IoniconsIconName;
   desabilitado?: boolean;
   empilhado?: boolean;
   style?: StyleProp<ViewStyle>;

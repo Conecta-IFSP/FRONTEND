@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, type IoniconsIconName } from '@react-native-vector-icons/ionicons';
 
 import { coresDoNome, iniciais } from '@/components/Avatar';
 import { Botao } from '@/components/Botao';
@@ -17,7 +17,7 @@ import { plural, quando } from '@/utils/reunioes';
 
 type Resumo = { comissoes: number; membros: number | null; pedidos: number; proxima: Reuniao | null };
 
-const ACOES: { rotulo: string; icone: keyof typeof Ionicons.glyphMap; destino: Href }[] = [
+const ACOES: { rotulo: string; icone: IoniconsIconName; destino: Href }[] = [
   { rotulo: 'Criar organização', icone: 'business-outline', destino: '/organizacoes/cadastro' },
   { rotulo: 'Participar de uma organização', icone: 'enter-outline', destino: '/organizacoes/participar' },
 ];

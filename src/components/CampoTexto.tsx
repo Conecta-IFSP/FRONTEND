@@ -1,6 +1,6 @@
 import { forwardRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, type IoniconsIconName } from '@react-native-vector-icons/ionicons';
 import { useController, type Control, type FieldPath, type FieldValues } from 'react-hook-form';
 
 import { ESPACO, FONTES, RAIO, TIPOGRAFIA } from '@/constants/theme';
@@ -8,10 +8,10 @@ import { useTema } from '@/contexts/TemaContext';
 
 type CampoTextoProps = TextInputProps & {
   rotulo: string;
-  icone?: keyof typeof Ionicons.glyphMap;
+  icone?: IoniconsIconName;
   erro?: string | null;
   acaoFinal?: {
-    icone: keyof typeof Ionicons.glyphMap;
+    icone: IoniconsIconName;
     rotuloAcessivel: string;
     aoTocar: () => void;
   };
@@ -196,7 +196,7 @@ type CampoSelecaoProps = {
   rotulo: string;
   valor: string;
   aoTocar: () => void;
-  icone?: keyof typeof Ionicons.glyphMap;
+  icone?: IoniconsIconName;
   detalhe?: string;
   desabilitado?: boolean;
   compacto?: boolean;

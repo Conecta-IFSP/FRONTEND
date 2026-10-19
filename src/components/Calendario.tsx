@@ -8,7 +8,7 @@ import {
   View,
   type PanResponderGestureState,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 
 import { ESPACO, FONTES } from '@/constants/theme';
 import { useTema } from '@/contexts/TemaContext';

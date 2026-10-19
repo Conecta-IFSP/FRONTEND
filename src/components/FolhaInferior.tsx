@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, type IoniconsIconName } from '@react-native-vector-icons/ionicons';
 
 import { ESPACO, FONTES, RAIO, TIPOGRAFIA } from '@/constants/theme';
 import { useTema } from '@/contexts/TemaContext';
@@ -56,7 +56,7 @@ export function FolhaInferior({ visivel, titulo, topo, aoFechar, children }: Fol
 }
 
 type OpcaoFolhaProps = {
-  icone: keyof typeof Ionicons.glyphMap;
+  icone: IoniconsIconName;
   rotulo: string;
   aoTocar: () => void;
   perigo?: boolean;

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, type IoniconsIconName } from '@react-native-vector-icons/ionicons';
 
 import { Botao } from '@/components/Botao';
 import { CampoTexto } from '@/components/CampoTexto';
@@ -20,7 +20,7 @@ type Filtro = 'disponiveis' | 'pendentes' | 'recusadas';
 const FILTROS: {
   valor: Filtro;
   titulo: string;
-  icone: keyof typeof Ionicons.glyphMap;
+  icone: IoniconsIconName;
   resumo: (quantidade: number) => string;
   vazio: string;
 }[] = [
