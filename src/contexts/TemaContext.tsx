@@ -15,6 +15,7 @@ import { TEMAS, type Tema } from '@/constants/theme';
 export type PreferenciaTema = 'sistema' | 'claro' | 'escuro';
 
 const CHAVE_PREFERENCIA = 'conecta_mais_tema';
+const ID_ESTILO_ROLAGEM = 'conecta-mais-rolagem';
 
 export function ehPreferenciaTema(valor: unknown): valor is PreferenciaTema {
   return valor === 'sistema' || valor === 'claro' || valor === 'escuro';
@@ -33,6 +34,26 @@ async function gravarPreferencia(preferencia: PreferenciaTema) {
     return;
   }
   await SecureStore.setItemAsync(CHAVE_PREFERENCIA, preferencia);
+}
+
+function aplicarRolagemWeb(tema: Tema) {
+  if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+  let estilo = document.getElementById(ID_ESTILO_ROLAGEM);
+  if (!estilo) {
+    estilo = document.createElement('style');
+    estilo.id = ID_ESTILO_ROLAGEM;
+    document.head.appendChild(estilo);
+  }
+  const { borda, textoSutil } = tema.cores;
+  const barra = tema.escuro ? borda : `${textoSutil}80`;
+  estilo.textContent = [
+    `:root{color-scheme:${tema.escuro ? 'dark' : 'light'}}`,
+    '::-webkit-scrollbar{width:8px;height:8px}',
+    '::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:transparent}',
+    `::-webkit-scrollbar-thumb{background:${barra};border-radius:4px}`,
+    `::-webkit-scrollbar-thumb:hover{background:${textoSutil}}`,
+    `@supports not selector(::-webkit-scrollbar){*{scrollbar-width:thin;scrollbar-color:${barra} transparent}}`,
+  ].join('');
 }
 
 type ContextoTema = {
@@ -69,6 +90,10 @@ export function TemaProvider({ children }: { children: ReactNode }) {
         : preferencia;
     return { tema: TEMAS[efetivo], preferencia, definirPreferencia };
   }, [definirPreferencia, esquemaDoAparelho, preferencia]);
+
+  useEffect(() => {
+    aplicarRolagemWeb(valor.tema);
+  }, [valor.tema]);
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
 }
