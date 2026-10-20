@@ -70,6 +70,18 @@ export function mascararHora(texto: string) {
   return digitos.length > 2 ? `${digitos.slice(0, 2)}:${digitos.slice(2)}` : digitos;
 }
 
+export function mascararCodigo(texto: string) {
+  const limpo = texto.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+  return limpo.length > 5 ? `${limpo.slice(0, 5)}-${limpo.slice(5)}` : limpo;
+}
+
+export function validarCodigo(texto: string) {
+  const tamanho = texto.replace(/[^A-Z0-9]/gi, '').length;
+  if (tamanho === 0) return 'Informe o código.';
+  if (tamanho < 10) return 'O código tem 10 caracteres.';
+  return null;
+}
+
 export function validarHora(texto: string) {
   if (texto.length === 0) return 'Informe o horário.';
   if (minutosDaHora(texto) === null) return 'Horário inválido.';

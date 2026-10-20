@@ -1,9 +1,10 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Clipboard from 'expo-clipboard';
 
 import { Abas } from '@/components/Abas';
 import { Avatar, coresDoNome, iniciais } from '@/components/Avatar';
@@ -18,16 +19,24 @@ import { useSessao } from '@/contexts/SessaoContext';
 import { useTema } from '@/contexts/TemaContext';
 import { api, type Comissao, type Organizacao, type Resultado, type Reuniao } from '@/services/api';
 import { plural, quando } from '@/utils/reunioes';
-import { validarEmail } from '@/utils/validacao';
+import { mascararCodigo, validarEmail } from '@/utils/validacao';
 
 type Aba = 'comissoes' | 'membros';
 type Filtro = 'Todas' | 'Ativas' | 'Inativas';
 type Membro = NonNullable<Organizacao['membros']>[number];
-type Pendente = { mensagem: string; rotulo: string; perigo?: boolean; acao: () => Promise<Resultado<unknown>>; sucesso: string };
+type Pendente = {
+  mensagem: string;
+  rotulo: string;
+  perigo?: boolean;
+  acao: () => Promise<Resultado<unknown>>;
+  sucesso: string;
+  depois?: () => void;
+};
 type Dados = {
   id: string;
   organizacao: Organizacao | null;
   membros: Membro[] | null;
+  codigo: string;
   comissoes: Comissao[];
   reunioes: Reuniao[];
   momento: number;
@@ -57,6 +66,13 @@ export default function TelaOrganizacao() {
   const [email, definirEmail] = useState('');
   const [erroEmail, definirErroEmail] = useState('');
   const [convidando, definirConvidando] = useState(false);
+  const [copiado, definirCopiado] = useState(false);
+
+  useEffect(() => {
+    if (!copiado) return;
+    const espera = setTimeout(() => definirCopiado(false), 2000);
+    return () => clearTimeout(espera);
+  }, [copiado]);
 
   const carregar = useCallback(async () => {
     const momento = Date.now();
@@ -75,6 +91,7 @@ export default function TelaOrganizacao() {
       id,
       organizacao,
       membros: detalhe?.ok ? (detalhe.dados.membros ?? []) : null,
+      codigo: detalhe?.ok ? (detalhe.dados.codigo_acesso ?? '') : '',
       comissoes: comissoes.ok ? comissoes.dados : [],
       reunioes: reunioes.ok ? reunioes.dados : [],
       momento,
@@ -105,6 +122,7 @@ export default function TelaOrganizacao() {
   const organizacao = atual?.organizacao ?? null;
   const membros = atual?.membros ?? null;
   const admin = membros !== null;
+  const codigo = mascararCodigo(atual?.codigo ?? '');
   const aba: Aba = admin ? (escolha?.id === id ? escolha.aba : abaInicial === 'membros' ? 'membros' : 'comissoes') : 'comissoes';
   const hoje = new Date(atual?.momento ?? 0);
 
@@ -153,7 +171,7 @@ export default function TelaOrganizacao() {
     definirExecutando(true);
     const resultado = await confirmacao.acao();
     definirExecutando(false);
-    const sucesso = confirmacao.sucesso;
+    const { sucesso, depois } = confirmacao;
     definirConfirmacao(null);
     if (!resultado.ok) {
       definirAviso({ tom: 'erro', mensagem: resultado.erro });
@@ -161,6 +179,23 @@ export default function TelaOrganizacao() {
     }
     definirAviso({ tom: 'sucesso', mensagem: sucesso });
     definirDados(await carregar());
+    depois?.();
+  }
+
+  async function copiarCodigo() {
+    await Clipboard.setStringAsync(codigo);
+    definirCopiado(true);
+  }
+
+  function pedirNovoCodigo() {
+    definirConvidarAberto(false);
+    pedir({
+      mensagem: 'Gerar um novo código? O código atual deixa de funcionar.',
+      rotulo: 'Gerar',
+      acao: () => api(`/organizacoes/${id}/codigo`, 'POST', {}),
+      sucesso: 'Novo código gerado.',
+      depois: () => definirConvidarAberto(true),
+    });
   }
 
   async function convidar() {
@@ -719,6 +754,57 @@ export default function TelaOrganizacao() {
             carregando={convidando}
             aoTocar={() => void convidar()}
           />
+          {codigo ? (
+            <>
+              <View style={styles.separador}>
+                <View style={[styles.linhaSeparador, { backgroundColor: cores.bordaSuave }]} />
+                <Text style={[styles.textoSeparador, { color: cores.textoSutil }]}>ou compartilhe o código</Text>
+                <View style={[styles.linhaSeparador, { backgroundColor: cores.bordaSuave }]} />
+              </View>
+              <View style={[styles.cartaoCodigo, { backgroundColor: cores.superficieSuave, borderColor: cores.bordaSuave }]}>
+                <Text style={[styles.tituloCodigo, { color: cores.textoSuave }]}>Código de acesso</Text>
+                <View style={styles.linhaCodigo}>
+                  <Text style={[styles.codigo, { color: cores.texto }]} selectable>
+                    {codigo}
+                  </Text>
+                  <Pressable
+                    onPress={() => void copiarCodigo()}
+                    accessibilityRole="button"
+                    accessibilityLabel={copiado ? 'Código copiado' : 'Copiar código'}
+                    style={({ pressed }) => [
+                      styles.copiar,
+                      {
+                        backgroundColor: copiado ? cores.sucessoSuave : cores.primariaSuave,
+                        opacity: pressed ? 0.7 : 1,
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name={copiado ? 'checkmark' : 'copy-outline'}
+                      size={20}
+                      color={copiado ? cores.sucesso : cores.primaria}
+                    />
+                  </Pressable>
+                </View>
+                <View style={styles.linhaCodigo}>
+                  <Pressable
+                    onPress={pedirNovoCodigo}
+                    disabled={ocupado}
+                    accessibilityRole="button"
+                    style={({ pressed }) => [styles.gerarCodigo, { opacity: pressed ? 0.6 : 1 }]}
+                  >
+                    <Ionicons name="refresh" size={16} color={cores.primaria} />
+                    <Text style={[styles.textoAtalho, { color: cores.primaria }]}>Gerar novo código</Text>
+                  </Pressable>
+                  {copiado ? (
+                    <Text style={[styles.textoAtalho, { color: cores.sucesso }]} accessibilityLiveRegion="polite">
+                      Copiado
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+            </>
+          ) : null}
         </View>
       </FolhaInferior>
 
@@ -835,6 +921,23 @@ const styles = StyleSheet.create({
   botaoMenu: { width: 40, height: 44, alignItems: 'center', justifyContent: 'center' },
   redondo: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginRight: 6 },
   formulario: { paddingHorizontal: ESPACO.md, paddingBottom: ESPACO.sm, gap: ESPACO.md },
+  separador: { flexDirection: 'row', alignItems: 'center', gap: ESPACO.md - 4 },
+  linhaSeparador: { flex: 1, height: 1 },
+  textoSeparador: { fontFamily: FONTES.corpo, fontSize: 13, lineHeight: 18 },
+  cartaoCodigo: {
+    borderWidth: 1,
+    borderRadius: RAIO.lg,
+    paddingTop: ESPACO.md - 4,
+    paddingBottom: ESPACO.xs,
+    paddingLeft: ESPACO.md - 2,
+    paddingRight: ESPACO.sm,
+    gap: 2,
+  },
+  tituloCodigo: { fontFamily: FONTES.titulo, fontSize: 13, lineHeight: 18 },
+  linhaCodigo: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: ESPACO.sm },
+  codigo: { flex: 1, minWidth: 0, fontFamily: FONTES.titulo, fontSize: 24, lineHeight: 32, letterSpacing: 2 },
+  copiar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  gerarCodigo: { height: 36, flexDirection: 'row', alignItems: 'center', gap: 6, paddingRight: ESPACO.sm },
   fab: {
     position: 'absolute',
     right: ESPACO.md,

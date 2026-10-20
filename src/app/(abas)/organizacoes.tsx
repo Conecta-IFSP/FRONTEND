@@ -19,7 +19,7 @@ type Resumo = { comissoes: number; membros: number | null; pedidos: number; prox
 
 const ACOES: { rotulo: string; icone: IoniconsIconName; destino: Href }[] = [
   { rotulo: 'Criar organização', icone: 'business-outline', destino: '/organizacoes/cadastro' },
-  { rotulo: 'Participar de uma organização', icone: 'enter-outline', destino: '/organizacoes/participar' },
+  { rotulo: 'Entrar com código', icone: 'key-outline', destino: '/organizacoes/participar' },
 ];
 
 function administra(organizacao: Organizacao) {

@@ -93,6 +93,7 @@ export type Organizacao = {
   descricao?: string;
   status: 'PENDENTE' | 'APROVADA' | 'REVOGADA';
   criada_por?: { nome: string } | null;
+  codigo_acesso?: string;
   meu_vinculo?: { papel: 'ADMIN' | 'MEMBRO'; status: StatusVinculo } | null;
   membros?: {
     usuario_id: { _id: string; nome: string; email: string };
