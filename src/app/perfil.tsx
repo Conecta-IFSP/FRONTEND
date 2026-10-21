@@ -39,6 +39,7 @@ export default function TelaPerfil() {
     defaultValues: { nome: '', email: '' },
   });
   const salvando = formState.isSubmitting;
+  const [salvandoTema, definirSalvandoTema] = useState(false);
   const [aviso, definirAviso] = useState<Aviso | null>(null);
   const [carregando, definirCarregando] = useState(true);
 
@@ -63,6 +64,32 @@ export default function TelaPerfil() {
       ativa = false;
     };
   }, [definirPreferencia, reset]);
+
+  async function selecionarTema(novaPreferencia: PreferenciaTema) {
+    if (salvando || salvandoTema || novaPreferencia === preferenciaSelecionada) return;
+
+    const preferenciaAnterior = preferenciaSelecionada;
+    definirPreferenciaSelecionada(novaPreferencia);
+    definirPreferencia(novaPreferencia);
+    definirSalvandoTema(true);
+    definirAviso(null);
+
+    const resultado = await api<Perfil>('/usuarios/me', 'PATCH', {
+      tema: novaPreferencia,
+    });
+
+    definirSalvandoTema(false);
+
+    if (!resultado.ok) {
+      definirPreferenciaSelecionada(preferenciaAnterior);
+      definirPreferencia(preferenciaAnterior);
+      definirAviso({
+        tom: 'erro',
+        titulo: 'Não foi possível alterar o tema',
+        mensagem: resultado.erro,
+      });
+    }
+  }
 
   const salvar = handleSubmit(async ({ nome, email }) => {
     definirAviso(null);
@@ -138,8 +165,8 @@ export default function TelaPerfil() {
                 titulo={opcao.titulo}
                 icone={opcao.icone}
                 selecionado={preferenciaSelecionada === opcao.valor}
-                aoTocar={() => definirPreferenciaSelecionada(opcao.valor)}
-                desabilitado={salvando}
+                aoTocar={() => void selecionarTema(opcao.valor)}
+                desabilitado={salvando || salvandoTema}
                 empilhado
                 style={styles.opcaoTema}
               />
