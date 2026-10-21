@@ -15,15 +15,18 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "br.com.conectamais.app"
+      "bundleIdentifier": "br.com.conectamais.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "package": "br.com.conectamais.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
-      },
-      "edgeToEdgeEnabled": true
+      }
     },
     "web": {
       "bundler": "metro",
@@ -43,10 +46,22 @@
         }
       ],
       "expo-secure-store",
-      "@react-native-vector-icons/ionicons"
+      "@react-native-vector-icons/ionicons",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.908943816164-11tt0dc20n2as32gu6o8829f6rs9vvmh"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4a2e6e7d-33e1-4cb4-b350-8f5390eca6dc"
+      }
     }
   }
 }

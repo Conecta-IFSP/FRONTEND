@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Redirecionando…</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+        margin: 0;
+        background: #f4f6fb;
+        color: #182033;
+      }
+      .box {
+        text-align: center;
+        padding: 24px;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px #1725541f;
+      }
+      .spinner {
+        width: 28px;
+        height: 28px;
+        border: 3px solid #e2e8f0;
+        border-top-color: #256ef1;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin: 0 auto 16px;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <div class="spinner" aria-hidden="true"></div>
+      <p>Finalizando login…</p>
+    </div>
+    <script>
+      (function () {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get("code");
+        const state = params.get("state");
+        const error = params.get("error");
+        if (error) {
+          document.body.innerHTML =
+            '<div class="box" style="color:#c00"><p>Erro: ' +
+            error +
+            "</p></div>";
+          return;
+        }
+        if (code) {
+          const deepLink =
+            "conectamais://auth/google?code=" +
+            encodeURIComponent(code) +
+            (state ? "&state=" + encodeURIComponent(state) : "");
+          const ehDispositivoMovel = /Android|iPhone|iPad|iPod/i.test(
+            navigator.userAgent
+          );
+
+          if (ehDispositivoMovel) {
+            window.location.href = deepLink;
+            setTimeout(() => {
+              document.body.innerHTML =
+                '<div class="box"><p>Se o app não abriu, <a href="' +
+                deepLink +
+                '">toque aqui</a>.</p></div>';
+            }, 1500);
+          } else {
+            const rotaWeb = new URL('../login/google-callback', window.location.href);
+            rotaWeb.searchParams.set('code', code);
+            if (state) rotaWeb.searchParams.set('state', state);
+            window.location.replace(rotaWeb.toString());
+          }
+        } else {
+          document.body.innerHTML =
+            '<div class="box" style="color:#c00"><p>Código não recebido.</p></div>';
+        }
+      })();
+    </script>
+  </body>
+</html>
