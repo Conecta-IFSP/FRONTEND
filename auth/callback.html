@@ -60,14 +60,24 @@
             "conectamais://auth/google?code=" +
             encodeURIComponent(code) +
             (state ? "&state=" + encodeURIComponent(state) : "");
-          window.location.href = deepLink;
-          // Fallback se o app não abrir (ex.: web)
-          setTimeout(() => {
-            document.body.innerHTML =
-              '<div class="box"><p>Se o app não abriu, <a href="' +
-              deepLink +
-              '">toque aqui</a>.</p></div>';
-          }, 1500);
+          const ehDispositivoMovel = /Android|iPhone|iPad|iPod/i.test(
+            navigator.userAgent
+          );
+
+          if (ehDispositivoMovel) {
+            window.location.href = deepLink;
+            setTimeout(() => {
+              document.body.innerHTML =
+                '<div class="box"><p>Se o app não abriu, <a href="' +
+                deepLink +
+                '">toque aqui</a>.</p></div>';
+            }, 1500);
+          } else {
+            const rotaWeb = new URL('../login/google-callback', window.location.href);
+            rotaWeb.searchParams.set('code', code);
+            if (state) rotaWeb.searchParams.set('state', state);
+            window.location.replace(rotaWeb.toString());
+          }
         } else {
           document.body.innerHTML =
             '<div class="box" style="color:#c00"><p>Código não recebido.</p></div>';
