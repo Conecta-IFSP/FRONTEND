@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { Link } from "expo-router";
 import { useForm } from "react-hook-form";
 import * as AuthSession from "expo-auth-session";
@@ -15,7 +15,14 @@ import { ehPreferenciaTema, useTema } from "@/contexts/TemaContext";
 import { api } from "@/services/api";
 import { useSessao } from "@/contexts/SessaoContext";
 import { normalizarEmail, validarEmail, validarSenha } from "@/utils/validacao";
-import { getGoogleRedirectUri, discovery, CLIENT_ID, exchangeCodeForToken } from "@/services/google";
+import {
+  getGoogleRedirectUri,
+  discovery,
+  CLIENT_ID,
+  exchangeCodeForToken,
+  loginComIdTokenGoogle,
+  signInWithGoogleNative,
+} from "@/services/google";
 
 type RespostaLogin = {
   access_token?: string;
@@ -48,7 +55,9 @@ export default function TelaLogin() {
       clientId: CLIENT_ID,
       redirectUri,
       scopes: ["openid", "email", "profile"],
-      usePKCE: true,
+      // O código é trocado pelo backend usando client_secret. Manter PKCE
+      // aqui exigiria transportar o code_verifier até o callback/backend.
+      usePKCE: false,
     },
     discovery
   );
@@ -80,20 +89,31 @@ export default function TelaLogin() {
   const entrarComGoogle = async () => {
     setCarregandoGoogle(true);
     try {
-      const result = await promptAsync();
-      if (result.type === "success" && result.params.code) {
-        const res = await exchangeCodeForToken(result.params.code, redirectUri);
-        if (res.ok) {
-          await sessao.entrar(res.dados.access_token);
+      // No navegador, manter a navegação na mesma aba evita que o callback
+      // monte uma segunda instância do Expo e perca o estado da sessão.
+      if (Platform.OS === "web") {
+        if (!request?.url) {
+          definirErro("A autenticação do Google ainda está carregando. Tente novamente.");
           return;
-        } else {
-          console.error("Erro no login Google:", res.erro);
-          definirErro(res.erro || "Falha ao autenticar com Google");
         }
-      } else if (result.type === "error") {
-        console.error("Erro OAuth:", result.error);
-        definirErro("Login cancelado ou erro na autenticação");
+        window.location.assign(request.url);
+        return;
       }
+
+      const nativeResult = await signInWithGoogleNative();
+      if (nativeResult.cancelled) return;
+
+      const res = await loginComIdTokenGoogle(nativeResult.idToken);
+      if (res.ok) {
+        await sessao.entrar(res.dados.access_token);
+        return;
+      }
+
+      console.error("Erro no login Google:", res.erro);
+      definirErro(res.erro || "Falha ao autenticar com Google");
+    } catch (error) {
+      console.error("Erro OAuth:", error);
+      definirErro(error instanceof Error ? error.message : "Falha ao autenticar com Google");
     } finally {
       setCarregandoGoogle(false);
     }
