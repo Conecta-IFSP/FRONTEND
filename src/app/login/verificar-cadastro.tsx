@@ -7,11 +7,13 @@ import { CampoCodigo } from '@/components/CampoTexto';
 import { FaixaAviso } from '@/components/FaixaAviso';
 import { TelaComCabecalho } from '@/components/TelaComCabecalho';
 import { FONTES, TIPOGRAFIA } from '@/constants/theme';
+import { useToast } from '@/contexts/ToastContext';
 import { useTema } from '@/contexts/TemaContext';
 import { api } from '@/services/api';
 
 export default function TelaVerificarCadastro() {
   const router = useRouter();
+  const { mostrarToast } = useToast();
   const { tema } = useTema();
   const { cores } = tema;
   const parametros = useLocalSearchParams<{ email?: string }>();
@@ -32,6 +34,7 @@ export default function TelaVerificarCadastro() {
     });
     definirCarregando(false);
     if (!resultado.ok) return definirErro(resultado.erro);
+    mostrarToast('Conta criada com sucesso! Agora faça login para continuar.', 'sucesso', 5000);
     router.replace('/login');
   }
 
