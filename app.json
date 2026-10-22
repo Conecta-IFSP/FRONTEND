@@ -52,6 +52,12 @@
         {
           "iosUrlScheme": "com.googleusercontent.apps.908943816164-11tt0dc20n2as32gu6o8829f6rs9vvmh"
         }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "O Conecta+ usa o Face ID para proteger as configurações da sua conta."
+        }
       ]
     ],
     "experiments": {

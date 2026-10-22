@@ -14,8 +14,11 @@ function obterUrlApi() {
   if (!configurada) return null;
 
   const hostExpo = Constants.expoConfig?.hostUri?.split(':')[0];
-  const ehLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(configurada);
-  if (Platform.OS === 'web' || !hostExpo || !ehLocalhost) return configurada;
+  // No emulador Android, 10.0.2.2 aponta para o computador host.
+  // No Expo Go em um celular físico, o endereço correto é o IP do computador
+  // que aparece em Constants.expoConfig.hostUri.
+  const ehEnderecoLocal = /^https?:\/\/(localhost|127\.0\.0\.1|10\.0\.2\.2)(:\d+)?$/i.test(configurada);
+  if (Platform.OS === 'web' || !hostExpo || !ehEnderecoLocal) return configurada;
 
   const url = new URL(configurada);
   url.hostname = hostExpo;

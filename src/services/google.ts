@@ -1,7 +1,7 @@
 import * as AuthSession from 'expo-auth-session';
 import { api } from './api';
 import { Platform } from 'react-native';
-import { GoogleSignin, isSuccessResponse } from '@react-native-google-signin/google-signin';
+import Constants from 'expo-constants';
 
 const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID!;
 const IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID!;
@@ -71,7 +71,11 @@ export async function exchangeCodeForToken(code: string, redirectUri: string) {
 
 let nativeGoogleConfigured = false;
 
-function configureNativeGoogle() {
+function estaNoExpoGo() {
+  return Constants.executionEnvironment === 'storeClient';
+}
+
+function configureNativeGoogle(GoogleSignin: typeof import('@react-native-google-signin/google-signin').GoogleSignin) {
   if (Platform.OS === 'web' || nativeGoogleConfigured) return;
 
   GoogleSignin.configure({
@@ -83,7 +87,14 @@ function configureNativeGoogle() {
 }
 
 export async function signInWithGoogleNative() {
-  configureNativeGoogle();
+  if (estaNoExpoGo()) {
+    throw new Error(
+      'O login Google nativo não funciona no Expo Go. Abra o projeto com uma development build usando npx expo run:android.',
+    );
+  }
+
+  const { GoogleSignin, isSuccessResponse } = await import('@react-native-google-signin/google-signin');
+  configureNativeGoogle(GoogleSignin);
 
   if (Platform.OS === 'android') {
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
