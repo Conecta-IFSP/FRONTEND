@@ -1,7 +1,7 @@
-import * as AuthSession from 'expo-auth-session';
-import { api } from './api';
-import { Platform } from 'react-native';
-import Constants from 'expo-constants';
+import * as AuthSession from "expo-auth-session";
+import { api } from "./api";
+import { Platform } from "react-native";
+import Constants from "expo-constants";
 
 const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID!;
 const IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID!;
@@ -12,17 +12,17 @@ const WEB_REDIRECT_URI =
   `${API_URL}/auth/google/callback-web`;
 
 export const CLIENT_ID =
-  Platform.OS === 'ios'
+  Platform.OS === "ios"
     ? IOS_CLIENT_ID
-    : Platform.OS === 'android'
+    : Platform.OS === "android"
       ? ANDROID_CLIENT_ID
       : WEB_CLIENT_ID;
 
 // Mobile: página pública → deep link conectamais://
 function getMobileRedirectUri(): string {
   return AuthSession.makeRedirectUri({
-    scheme: 'conectamais',
-    path: 'auth/google',
+    scheme: "conectamais",
+    path: "auth/google",
   });
 }
 
@@ -37,34 +37,34 @@ export function getWebCallbackRedirectUri(): string {
 }
 
 export function getGoogleRedirectUri(): string {
-  return Platform.OS === 'web' ? getWebRedirectUri() : getMobileRedirectUri();
+  return Platform.OS === "web" ? getWebRedirectUri() : getMobileRedirectUri();
 }
 
 export function getAppDeepLink(): string {
   return AuthSession.makeRedirectUri({
-    scheme: 'conectamais',
-    path: 'auth/google',
+    scheme: "conectamais",
+    path: "auth/google",
     preferLocalhost: true,
   });
 }
 
 const discovery = {
-  authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
-  tokenEndpoint: 'https://oauth2.googleapis.com/token',
+  authorizationEndpoint: "https://accounts.google.com/o/oauth2/v2/auth",
+  tokenEndpoint: "https://oauth2.googleapis.com/token",
 };
 
 export { discovery };
 
 export async function exchangeCodeForToken(code: string, redirectUri: string) {
   if (!redirectUri || !redirectUri.trim()) {
-    throw new Error('redirectUri should not be empty');
+    throw new Error("redirectUri should not be empty");
   }
   const res = await api<{ access_token: string; usuario: any }>(
-    '/auth/google',
-    'POST',
+    "/auth/google",
+    "POST",
     // O DTO do backend usa camelCase. O redirect_uri precisa ser exatamente
     // o mesmo valor usado na autorização inicial.
-    { code, redirectUri, plataforma: Platform.OS }
+    { code, redirectUri, plataforma: Platform.OS },
   );
   return res;
 }
@@ -72,31 +72,34 @@ export async function exchangeCodeForToken(code: string, redirectUri: string) {
 let nativeGoogleConfigured = false;
 
 function estaNoExpoGo() {
-  return Constants.executionEnvironment === 'storeClient';
+  return Constants.executionEnvironment === "storeClient";
 }
 
-function configureNativeGoogle(GoogleSignin: typeof import('@react-native-google-signin/google-signin').GoogleSignin) {
-  if (Platform.OS === 'web' || nativeGoogleConfigured) return;
+function configureNativeGoogle(
+  GoogleSignin: typeof import("@react-native-google-signin/google-signin").GoogleSignin,
+) {
+  if (Platform.OS === "web" || nativeGoogleConfigured) return;
 
   GoogleSignin.configure({
     // Este é o cliente Web usado pelo backend para validar o ID Token.
     webClientId: WEB_CLIENT_ID,
-    ...(Platform.OS === 'ios' && IOS_CLIENT_ID ? { iosClientId: IOS_CLIENT_ID } : {}),
+    ...(Platform.OS === "ios" && IOS_CLIENT_ID
+      ? { iosClientId: IOS_CLIENT_ID }
+      : {}),
   });
   nativeGoogleConfigured = true;
 }
 
 export async function signInWithGoogleNative() {
   if (estaNoExpoGo()) {
-    throw new Error(
-      'O login Google nativo não funciona no Expo Go. Abra o projeto com uma development build usando npx expo run:android.',
-    );
+    throw new Error("O login Google não funciona no Expo.");
   }
 
-  const { GoogleSignin, isSuccessResponse } = await import('@react-native-google-signin/google-signin');
+  const { GoogleSignin, isSuccessResponse } =
+    await import("@react-native-google-signin/google-signin");
   configureNativeGoogle(GoogleSignin);
 
-  if (Platform.OS === 'android') {
+  if (Platform.OS === "android") {
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
   }
 
@@ -107,16 +110,15 @@ export async function signInWithGoogleNative() {
 
   const { idToken } = await GoogleSignin.getTokens();
   if (!idToken) {
-    throw new Error('O Google não retornou um ID Token.');
+    throw new Error("O Google não retornou um ID Token.");
   }
 
   return { cancelled: false as const, idToken };
 }
 
 export async function loginComIdTokenGoogle(idToken: string) {
-  return api<{ access_token: string; usuario: any }>(
-    '/auth/google',
-    'POST',
-    { idToken, plataforma: Platform.OS },
-  );
+  return api<{ access_token: string; usuario: any }>("/auth/google", "POST", {
+    idToken,
+    plataforma: Platform.OS,
+  });
 }

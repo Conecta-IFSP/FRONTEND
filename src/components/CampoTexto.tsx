@@ -1,5 +1,5 @@
 import { forwardRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 import { Ionicons, type IoniconsIconName } from '@react-native-vector-icons/ionicons';
 import { useController, type Control, type FieldPath, type FieldValues } from 'react-hook-form';
 
@@ -303,7 +303,18 @@ const styles = StyleSheet.create({
   codigoLinha: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: ESPACO.sm },
   codigoGrupo: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   codigoCaixa: { width: 40, height: 52, borderWidth: 1.5, borderRadius: RAIO.md, alignItems: 'center', justifyContent: 'center' },
-  codigoCaractere: { fontFamily: FONTES.titulo, fontSize: 24, lineHeight: 30 },
+  // A fonte do código precisa ter um glifo `I` claramente visível em todos os
+  // dispositivos. Poppins pode renderizar esse caractere como um traço quase
+  // imperceptível dentro da caixa, principalmente no Android.
+  codigoCaractere: {
+    fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }),
+    fontSize: 24,
+    fontWeight: '700',
+    lineHeight: 30,
+    textAlign: 'center',
+    includeFontPadding: true,
+    minWidth: 22,
+  },
   codigoSeparador: { fontFamily: FONTES.titulo, fontSize: 22 },
   codigoOculto: { position: 'absolute', width: 1, height: 1, opacity: 0 },
   container: { width: '100%' },

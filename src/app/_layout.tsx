@@ -9,6 +9,7 @@ import { Poppins_500Medium } from '@expo-google-fonts/poppins/500Medium';
 import { Poppins_600SemiBold } from '@expo-google-fonts/poppins/600SemiBold';
 
 import { TemaProvider, useTema } from '@/contexts/TemaContext';
+import { ToastProvider } from '@/contexts/ToastContext';
 import { SessaoProvider, useSessao } from '@/contexts/SessaoContext';
 import { Carregando } from '@/components/Carregando';
 
@@ -30,7 +31,9 @@ export default function LayoutRaiz() {
   return (
     <KeyboardProvider>
       <TemaProvider>
-        <SessaoProvider><Navegacao /></SessaoProvider>
+        <ToastProvider>
+          <SessaoProvider><Navegacao /></SessaoProvider>
+        </ToastProvider>
       </TemaProvider>
     </KeyboardProvider>
   );

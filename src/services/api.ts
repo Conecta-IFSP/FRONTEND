@@ -3,6 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
 const CHAVE_TOKEN = 'conecta_mais_token';
+const CHAVE_API = process.env.EXPO_PUBLIC_API_ACCESS_TOKEN?.trim();
 const ouvintes = new Set<() => void>();
 export function observarSessaoInvalida(ouvinte: () => void) {
   ouvintes.add(ouvinte);
@@ -56,6 +57,9 @@ export async function api<T>(
   if (!URL_API) {
     return { ok: false, erro: 'Configure EXPO_PUBLIC_API_URL para falar com o servidor.' };
   }
+  if (!CHAVE_API) {
+    return { ok: false, erro: 'Configure EXPO_PUBLIC_API_ACCESS_TOKEN para acessar o servidor.' };
+  }
 
   const token = await obterToken();
 
@@ -64,6 +68,7 @@ export async function api<T>(
       method: metodo,
       headers: {
         'Content-Type': 'application/json',
+        'X-API-Key': CHAVE_API,
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: corpo === undefined ? undefined : JSON.stringify(corpo),

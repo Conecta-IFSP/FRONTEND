@@ -9,6 +9,7 @@ import { FaixaAviso } from '@/components/FaixaAviso';
 import { TelaComCabecalho } from '@/components/TelaComCabecalho';
 import { FONTES, TIPOGRAFIA } from '@/constants/theme';
 import { useTema } from '@/contexts/TemaContext';
+import { useToast } from '@/contexts/ToastContext';
 import { api } from '@/services/api';
 import {
   normalizarEmail,
@@ -23,6 +24,7 @@ type DadosCadastro = { nome: string; email: string; senha: string; confirmacao: 
 export default function TelaCadastro() {
   const router = useRouter();
   const { tema } = useTema();
+  const { mostrarToast } = useToast();
   const { control, handleSubmit, setFocus, formState } = useForm<DadosCadastro>({
     defaultValues: { nome: '', email: '', senha: '', confirmacao: '' },
   });
@@ -44,6 +46,7 @@ export default function TelaCadastro() {
       return;
     }
 
+    mostrarToast('Conta criada com sucesso! Confira seu e-mail para confirmar o cadastro.', 'sucesso');
     router.replace({ pathname: '/login/verificar-cadastro', params: { email: normalizarEmail(email) } });
   });
 
