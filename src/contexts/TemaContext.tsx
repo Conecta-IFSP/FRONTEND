@@ -48,11 +48,13 @@ function aplicarRolagemWeb(tema: Tema) {
   const barra = tema.escuro ? borda : `${textoSutil}80`;
   estilo.textContent = [
     `:root{color-scheme:${tema.escuro ? 'dark' : 'light'}}`,
+    '@media (hover:hover) and (pointer:fine){',
     '::-webkit-scrollbar{width:8px;height:8px}',
     '::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:transparent}',
     `::-webkit-scrollbar-thumb{background:${barra};border-radius:4px}`,
     `::-webkit-scrollbar-thumb:hover{background:${textoSutil}}`,
     `@supports not selector(::-webkit-scrollbar){*{scrollbar-width:thin;scrollbar-color:${barra} transparent}}`,
+    '}',
   ].join('');
 }
 

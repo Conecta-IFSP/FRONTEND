@@ -62,6 +62,7 @@ export default function TelaAlterarSenha() {
             nome="atual"
             validar={validarSenha}
             rotulo="Senha atual"
+            placeholder="Senha atual"
             icone="lock-closed-outline"
             secureTextEntry
             autoCapitalize="none"
@@ -73,6 +74,7 @@ export default function TelaAlterarSenha() {
             nome="nova"
             validar={validarSenha}
             rotulo="Nova senha"
+            placeholder="Nova senha"
             icone="key-outline"
             secureTextEntry
             autoCapitalize="none"
@@ -84,6 +86,7 @@ export default function TelaAlterarSenha() {
             nome="confirmacao"
             validar={(confirmacao, valores) => validarConfirmacaoSenha(valores.nova, confirmacao)}
             rotulo="Confirmar nova senha"
+            placeholder="Confirmar senha"
             icone="checkmark-circle-outline"
             secureTextEntry
             autoCapitalize="none"

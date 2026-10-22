@@ -1,42 +1,88 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { useForm, useWatch } from 'react-hook-form';
 
+import { coresDoNome, iniciais } from '@/components/Avatar';
 import { Botao } from '@/components/Botao';
 import { CampoTextoControlado } from '@/components/CampoTexto';
-import { Cartao } from '@/components/Cartao';
 import { Etiqueta } from '@/components/Etiqueta';
 import { FaixaAviso } from '@/components/FaixaAviso';
-import { FundoGradiente } from '@/components/FundoGradiente';
-import { Logo } from '@/components/Logo';
-import { ESPACO, TIPOGRAFIA } from '@/constants/theme';
+import { TelaComCabecalho } from '@/components/TelaComCabecalho';
+import { ESPACO, FONTES, RAIO, TIPOGRAFIA } from '@/constants/theme';
 import { useTema } from '@/contexts/TemaContext';
 import { api } from '@/services/api';
 import {
   TAMANHO_MAXIMO_DESCRICAO,
+  validarCidade,
   validarDescricao,
   validarNomeOrganizacao,
 } from '@/utils/validacao';
 
+type DadosOrganizacao = { nome: string; cidade: string; descricao: string };
+
+function Previa({ nome, cidade, descricao, enviada }: DadosOrganizacao & { enviada: boolean }) {
+  const { tema } = useTema();
+  const { cores } = tema;
+  const nomeLimpo = nome.trim();
+  const cidadeLimpa = cidade.trim();
+  const descricaoLimpa = descricao.trim();
+  const tinta = nomeLimpo ? coresDoNome(nomeLimpo, cores) : { fundo: cores.superficieSuave, texto: cores.textoSutil };
+
+  return (
+    <View
+      style={[styles.previa, { backgroundColor: cores.superficie, borderColor: cores.bordaSuave }]}
+      accessibilityLabel={`Prévia: ${nomeLimpo || 'sem nome'}${cidadeLimpa ? `, ${cidadeLimpa}` : ''}`}
+    >
+      <LinearGradient colors={tema.gradiente} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.faixa} />
+      <View style={styles.corpoPrevia}>
+        <View style={[styles.sigla, { backgroundColor: tinta.fundo, borderColor: cores.superficie }]}>
+          <Text style={[styles.textoSigla, { color: tinta.texto }]}>{nomeLimpo ? iniciais(nomeLimpo) : '?'}</Text>
+        </View>
+        <Text style={[styles.nomePrevia, { color: nomeLimpo ? cores.texto : cores.textoSutil }]} numberOfLines={1}>
+          {nomeLimpo || 'Nome da organização'}
+        </Text>
+        <View style={styles.linhaCidade}>
+          <Ionicons name="location-outline" size={14} color={cidadeLimpa ? cores.textoSuave : cores.textoSutil} />
+          <Text style={[styles.detalhe, { color: cidadeLimpa ? cores.textoSuave : cores.textoSutil }]} numberOfLines={1}>
+            {cidadeLimpa || 'Cidade'}
+          </Text>
+        </View>
+        {descricaoLimpa ? (
+          <Text style={[styles.detalhe, styles.descricaoPrevia, { color: cores.textoSuave }]} numberOfLines={2}>
+            {descricaoLimpa}
+          </Text>
+        ) : null}
+        {enviada ? (
+          <View style={styles.etiqueta}>
+            <Etiqueta texto="Aguardando autorização" tom="alerta" />
+          </View>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
 export default function TelaCadastroOrganizacao() {
   const router = useRouter();
-  const { tema } = useTema();
-  const { control, handleSubmit, formState } = useForm<{ nome: string; descricao: string }>({
-    defaultValues: { nome: '', descricao: '' },
+  const { cores } = useTema().tema;
+  const { control, handleSubmit, formState } = useForm<DadosOrganizacao>({
+    defaultValues: { nome: '', cidade: '', descricao: '' },
   });
-  const descricao = useWatch({ control, name: 'descricao' });
+  const [nome, cidade, descricao] = useWatch({ control, name: ['nome', 'cidade', 'descricao'] });
   const carregando = formState.isSubmitting;
   const [erro, definirErro] = useState('');
-  const [enviada, definirEnviada] = useState<string | null>(null);
+  const [enviada, definirEnviada] = useState<DadosOrganizacao | null>(null);
 
-  const enviar = handleSubmit(async ({ nome, descricao: texto }) => {
+  const enviar = handleSubmit(async (dados) => {
     definirErro('');
-    const descricaoLimpa = texto.trim();
+    const limpos = { nome: dados.nome.trim(), cidade: dados.cidade.trim(), descricao: dados.descricao.trim() };
     const resultado = await api('/organizacoes', 'POST', {
-      nome: nome.trim(),
-      ...(descricaoLimpa ? { descricao: descricaoLimpa } : {}),
+      nome: limpos.nome,
+      cidade: limpos.cidade,
+      ...(limpos.descricao ? { descricao: limpos.descricao } : {}),
     });
 
     if (!resultado.ok) {
@@ -44,99 +90,119 @@ export default function TelaCadastroOrganizacao() {
       return;
     }
 
-    definirEnviada(nome.trim());
+    definirEnviada(limpos);
   });
 
+  if (enviada) {
+    return (
+      <TelaComCabecalho
+        titulo="Criar organização"
+        iconeVoltar="close"
+        rotuloVoltar="Fechar"
+        rodape={<Botao titulo="Ver organizações" pilula aoTocar={() => router.navigate('/organizacoes')} />}
+      >
+        <View style={styles.sucesso}>
+          <View style={[styles.selo, { backgroundColor: cores.alertaSuave }]}>
+            <Ionicons name="time-outline" size={32} color={cores.alerta} />
+          </View>
+          <Text style={[styles.tituloSucesso, { color: cores.texto }]} accessibilityRole="header">
+            Solicitação enviada
+          </Text>
+          <Text style={[styles.textoSucesso, { color: cores.textoSutil }]}>Aguardando autorização do sistema.</Text>
+        </View>
+        <Previa {...enviada} enviada />
+      </TelaComCabecalho>
+    );
+  }
+
   return (
-    <FundoGradiente aoVoltar={() => router.back()}>
-      <Logo largura={150} />
+    <TelaComCabecalho
+      titulo="Criar organização"
+      iconeVoltar="close"
+      rodape={
+        <Botao
+          titulo="Enviar solicitação"
+          tituloCarregando="Enviando..."
+          pilula
+          carregando={carregando}
+          aoTocar={() => void enviar()}
+        />
+      }
+    >
+      <View style={styles.secao}>
+        <Text style={[styles.rotuloPrevia, { color: cores.textoSuave }]}>Prévia</Text>
+        <Previa nome={nome} cidade={cidade} descricao={descricao} enviada={false} />
+      </View>
 
-      <Cartao style={styles.cartao}>
-        {enviada ? (
-          <>
-            <View style={[styles.iconeSituacao, { backgroundColor: tema.cores.alertaSuave }]}>
-              <Ionicons name="time" size={26} color={tema.cores.alerta} />
-            </View>
-            <Text style={[styles.titulo, styles.tituloEnviado, { color: tema.cores.texto }]}>
-              Solicitação enviada
-            </Text>
-            <Text style={[styles.descricao, { color: tema.cores.textoSuave }]}>
-              A organização {enviada} foi cadastrada e aguarda a autorização de um administrador
-              do sistema.
-            </Text>
-            <View style={styles.etiqueta}>
-              <Etiqueta texto="Aguardando autorização" tom="alerta" />
-            </View>
-            <Botao titulo="Voltar ao início" aoTocar={() => router.back()} style={styles.botao} />
-          </>
-        ) : (
-          <>
-            <Text style={[styles.titulo, { color: tema.cores.texto }]}>Criar organização</Text>
-            <Text style={[styles.descricao, { color: tema.cores.textoSuave }]}>
-              A organização ficará disponível após a autorização do administrador do sistema.
-            </Text>
+      {erro ? <FaixaAviso aviso={{ tom: 'erro', titulo: 'Não foi possível enviar', mensagem: erro }} /> : null}
 
-            {erro ? (
-              <View style={styles.aviso}>
-                <FaixaAviso
-                  aviso={{ tom: 'erro', titulo: 'Não foi possível enviar', mensagem: erro }}
-                />
-              </View>
-            ) : null}
+      <CampoTextoControlado
+        controle={control}
+        nome="nome"
+        validar={validarNomeOrganizacao}
+        rotulo="Nome da organização"
+        placeholder="Organização"
+        icone="business-outline"
+        autoCapitalize="words"
+        autoCorrect={false}
+        maxLength={100}
+        editable={!carregando}
+        compacto
+      />
 
-            <View style={styles.campos}>
-              <CampoTextoControlado
-                controle={control}
-                nome="nome"
-                validar={validarNomeOrganizacao}
-                rotulo="Nome da organização"
-                icone="business-outline"
-                autoCapitalize="words"
-                autoCorrect={false}
-                editable={!carregando}
-              />
+      <CampoTextoControlado
+        controle={control}
+        nome="cidade"
+        validar={validarCidade}
+        rotulo="Cidade"
+        placeholder="Cidade"
+        icone="location-outline"
+        autoCapitalize="words"
+        maxLength={60}
+        editable={!carregando}
+        compacto
+      />
 
-              <CampoTextoControlado
-                controle={control}
-                nome="descricao"
-                validar={validarDescricao}
-                rotulo="Descrição (opcional)"
-                icone="document-text-outline"
-                dica={`${descricao.trim().length}/${TAMANHO_MAXIMO_DESCRICAO}`}
-                multiline
-                maxLength={TAMANHO_MAXIMO_DESCRICAO}
-                editable={!carregando}
-              />
-            </View>
-
-            <Botao
-              titulo="Enviar solicitação"
-              tituloCarregando="Enviando..."
-              carregando={carregando}
-              aoTocar={() => void enviar()}
-              style={styles.botao}
-            />
-          </>
-        )}
-      </Cartao>
-    </FundoGradiente>
+      <CampoTextoControlado
+        controle={control}
+        nome="descricao"
+        validar={validarDescricao}
+        rotulo="Descrição (opcional)"
+        placeholder="Descrição"
+        icone="document-text-outline"
+        dica={`${descricao.trim().length}/${TAMANHO_MAXIMO_DESCRICAO}`}
+        multiline
+        maxLength={TAMANHO_MAXIMO_DESCRICAO}
+        editable={!carregando}
+        compacto
+      />
+    </TelaComCabecalho>
   );
 }
 
 const styles = StyleSheet.create({
-  cartao: { marginTop: ESPACO.lg },
-  iconeSituacao: {
+  secao: { gap: ESPACO.sm },
+  rotuloPrevia: { fontFamily: FONTES.titulo, fontSize: 13, lineHeight: 18 },
+  previa: { borderWidth: 1, borderRadius: RAIO.lg, overflow: 'hidden' },
+  faixa: { height: 52 },
+  corpoPrevia: { paddingHorizontal: ESPACO.md - 2, paddingBottom: ESPACO.md - 2, gap: ESPACO.xs },
+  sigla: {
     width: 52,
     height: 52,
-    borderRadius: 26,
+    marginTop: -26,
+    borderWidth: 3,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  titulo: { ...TIPOGRAFIA.titulo },
-  tituloEnviado: { marginTop: ESPACO.md },
-  descricao: { ...TIPOGRAFIA.corpoPequeno, marginTop: ESPACO.xs },
-  etiqueta: { marginTop: ESPACO.md },
-  aviso: { marginTop: ESPACO.lg - 4 },
-  campos: { marginTop: ESPACO.lg, gap: ESPACO.md },
-  botao: { marginTop: ESPACO.lg },
+  textoSigla: { fontFamily: FONTES.titulo, fontSize: 18, lineHeight: 24 },
+  nomePrevia: { fontFamily: FONTES.titulo, fontSize: 16, lineHeight: 24, marginTop: ESPACO.xs },
+  linhaCidade: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  detalhe: { fontFamily: FONTES.corpo, fontSize: 13, lineHeight: 18, flexShrink: 1 },
+  descricaoPrevia: { marginTop: ESPACO.xs },
+  etiqueta: { flexDirection: 'row', marginTop: ESPACO.sm },
+  sucesso: { alignItems: 'center', gap: ESPACO.sm, paddingTop: ESPACO.lg },
+  selo: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
+  tituloSucesso: { fontFamily: FONTES.titulo, fontSize: 20, lineHeight: 28, marginTop: ESPACO.xs },
+  textoSucesso: { ...TIPOGRAFIA.corpoPequeno, textAlign: 'center', marginBottom: ESPACO.sm },
 });

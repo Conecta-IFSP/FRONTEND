@@ -5,11 +5,9 @@ import { useForm } from 'react-hook-form';
 
 import { Botao } from '@/components/Botao';
 import { CampoTextoControlado } from '@/components/CampoTexto';
-import { Cartao } from '@/components/Cartao';
 import { FaixaAviso } from '@/components/FaixaAviso';
-import { FundoGradiente } from '@/components/FundoGradiente';
-import { Logo } from '@/components/Logo';
-import { ESPACO, FONTES, TIPOGRAFIA } from '@/constants/theme';
+import { TelaComCabecalho } from '@/components/TelaComCabecalho';
+import { FONTES, TIPOGRAFIA } from '@/constants/theme';
 import { useTema } from '@/contexts/TemaContext';
 import { api } from '@/services/api';
 import {
@@ -25,7 +23,7 @@ type DadosCadastro = { nome: string; email: string; senha: string; confirmacao: 
 export default function TelaCadastro() {
   const router = useRouter();
   const { tema } = useTema();
-  const { control, handleSubmit, formState } = useForm<DadosCadastro>({
+  const { control, handleSubmit, setFocus, formState } = useForm<DadosCadastro>({
     defaultValues: { nome: '', email: '', senha: '', confirmacao: '' },
   });
   const carregando = formState.isSubmitting;
@@ -50,129 +48,122 @@ export default function TelaCadastro() {
   });
 
   return (
-    <FundoGradiente aoVoltar={() => router.back()}>
-      <Logo largura={150} />
-
-      <Cartao style={styles.cartao}>
-        <Text style={[styles.titulo, { color: tema.cores.texto }]}>Criar conta</Text>
-        <Text style={[styles.descricao, { color: tema.cores.textoSuave }]}>
-          Cadastre seus dados para começar a usar o Conecta+.
-        </Text>
-
-        {erro ? (
-          <View style={styles.aviso}>
-            <FaixaAviso
-              aviso={{ tom: 'erro', titulo: 'Não foi possível criar a conta', mensagem: erro }}
-            />
+    <TelaComCabecalho
+      titulo="Criar conta"
+      aoVoltar={() => (router.canGoBack() ? router.back() : router.replace('/login'))}
+      rodape={
+        <View style={styles.rodape}>
+          <Botao
+            titulo="Criar conta"
+            tituloCarregando="Criando..."
+            pilula
+            carregando={carregando}
+            aoTocar={() => void criarConta()}
+          />
+          <View style={styles.linha}>
+            <Text style={[styles.textoRodape, { color: tema.cores.textoSuave }]}>Já tem conta? </Text>
+            <Link href="/login" asChild>
+              <Pressable accessibilityRole="link" hitSlop={8}>
+                <Text style={[styles.linkForte, { color: tema.cores.primaria }]}>Entrar</Text>
+              </Pressable>
+            </Link>
           </View>
-        ) : null}
-
-        <View style={styles.campos}>
-          <CampoTextoControlado
-            controle={control}
-            nome="nome"
-            validar={validarNome}
-            rotulo="Nome"
-            icone="person-outline"
-            autoCapitalize="words"
-            autoComplete="name"
-            textContentType="name"
-            editable={!carregando}
-          />
-
-          <CampoTextoControlado
-            controle={control}
-            nome="email"
-            validar={validarEmail}
-            rotulo="E-mail"
-            icone="mail-outline"
-            placeholder="E-mail"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoComplete="email"
-            textContentType="emailAddress"
-            editable={!carregando}
-          />
-
-          <CampoTextoControlado
-            controle={control}
-            nome="senha"
-            validar={validarSenha}
-            rotulo="Senha"
-            icone="lock-closed-outline"
-            placeholder="Senha"
-            secureTextEntry={!senhaVisivel}
-            autoCapitalize="none"
-            autoCorrect={false}
-            textContentType="newPassword"
-            editable={!carregando}
-            acaoFinal={{
-              icone: senhaVisivel ? 'eye-off-outline' : 'eye-outline',
-              rotuloAcessivel: senhaVisivel ? 'Ocultar senha' : 'Mostrar senha',
-              aoTocar: () => definirSenhaVisivel((visivel) => !visivel),
-            }}
-          />
-
-          <CampoTextoControlado
-            controle={control}
-            nome="confirmacao"
-            validar={(confirmacao, valores) => validarConfirmacaoSenha(valores.senha, confirmacao)}
-            rotulo="Confirmar senha"
-            icone="lock-closed-outline"
-            placeholder="Repita a senha"
-            secureTextEntry={!confirmacaoVisivel}
-            autoCapitalize="none"
-            autoCorrect={false}
-            textContentType="newPassword"
-            editable={!carregando}
-            returnKeyType="go"
-            onSubmitEditing={() => void criarConta()}
-            acaoFinal={{
-              icone: confirmacaoVisivel ? 'eye-off-outline' : 'eye-outline',
-              rotuloAcessivel: confirmacaoVisivel ? 'Ocultar confirmação' : 'Mostrar confirmação',
-              aoTocar: () => definirConfirmacaoVisivel((visivel) => !visivel),
-            }}
-          />
         </View>
+      }
+    >
+      <Text style={[styles.descricao, { color: tema.cores.textoSuave }]}>
+        Preencha seus dados para começar.
+      </Text>
 
-        <Botao
-          titulo="Criar conta"
-          tituloCarregando="Criando..."
-          carregando={carregando}
-          aoTocar={() => void criarConta()}
-          style={styles.botao}
-        />
-      </Cartao>
+      {erro ? (
+        <FaixaAviso aviso={{ tom: 'erro', titulo: 'Não foi possível criar a conta', mensagem: erro }} />
+      ) : null}
 
-      <View style={styles.rodape}>
-        <Text style={[styles.textoRodape, { color: tema.cores.textoSuave }]}>
-          Já tem uma conta?{' '}
-        </Text>
-        <Link href="/login" asChild>
-          <Pressable accessibilityRole="link" hitSlop={8}>
-            <Text style={[styles.linkForte, { color: tema.cores.primaria }]}>Entrar</Text>
-          </Pressable>
-        </Link>
-      </View>
-    </FundoGradiente>
+      <CampoTextoControlado
+        controle={control}
+        nome="nome"
+        validar={validarNome}
+        rotulo="Nome"
+        placeholder="Nome"
+        icone="person-outline"
+        autoCapitalize="words"
+        autoComplete="name"
+        textContentType="name"
+        returnKeyType="next"
+        onSubmitEditing={() => setFocus('email')}
+        editable={!carregando}
+        compacto
+      />
+
+      <CampoTextoControlado
+        controle={control}
+        nome="email"
+        validar={validarEmail}
+        rotulo="E-mail"
+        icone="mail-outline"
+        placeholder="E-mail"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoCorrect={false}
+        autoComplete="email"
+        textContentType="emailAddress"
+        returnKeyType="next"
+        onSubmitEditing={() => setFocus('senha')}
+        editable={!carregando}
+        compacto
+      />
+
+      <CampoTextoControlado
+        controle={control}
+        nome="senha"
+        validar={validarSenha}
+        rotulo="Senha"
+        placeholder="Senha"
+        icone="lock-closed-outline"
+        secureTextEntry={!senhaVisivel}
+        autoCapitalize="none"
+        autoCorrect={false}
+        textContentType="newPassword"
+        returnKeyType="next"
+        onSubmitEditing={() => setFocus('confirmacao')}
+        editable={!carregando}
+        compacto
+        acaoFinal={{
+          icone: senhaVisivel ? 'eye-off-outline' : 'eye-outline',
+          rotuloAcessivel: senhaVisivel ? 'Ocultar senha' : 'Mostrar senha',
+          aoTocar: () => definirSenhaVisivel((visivel) => !visivel),
+        }}
+      />
+
+      <CampoTextoControlado
+        controle={control}
+        nome="confirmacao"
+        validar={(confirmacao, valores) => validarConfirmacaoSenha(valores.senha, confirmacao)}
+        rotulo="Confirmar senha"
+        placeholder="Confirmar senha"
+        icone="lock-closed-outline"
+        secureTextEntry={!confirmacaoVisivel}
+        autoCapitalize="none"
+        autoCorrect={false}
+        textContentType="newPassword"
+        editable={!carregando}
+        returnKeyType="go"
+        onSubmitEditing={() => void criarConta()}
+        compacto
+        acaoFinal={{
+          icone: confirmacaoVisivel ? 'eye-off-outline' : 'eye-outline',
+          rotuloAcessivel: confirmacaoVisivel ? 'Ocultar confirmação' : 'Mostrar confirmação',
+          aoTocar: () => definirConfirmacaoVisivel((visivel) => !visivel),
+        }}
+      />
+    </TelaComCabecalho>
   );
 }
 
 const styles = StyleSheet.create({
-  cartao: { marginTop: ESPACO.lg },
-  titulo: { ...TIPOGRAFIA.titulo },
-  descricao: { ...TIPOGRAFIA.corpoPequeno, marginTop: ESPACO.xs },
-  aviso: { marginTop: ESPACO.lg - 4 },
-  campos: { marginTop: ESPACO.lg, gap: ESPACO.md },
-  botao: { marginTop: ESPACO.lg },
-  rodape: {
-    marginTop: ESPACO.lg,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  descricao: { ...TIPOGRAFIA.corpo },
+  rodape: { gap: 12 },
+  linha: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' },
   textoRodape: { ...TIPOGRAFIA.corpoPequeno },
   linkForte: { fontFamily: FONTES.titulo, fontSize: 14, lineHeight: 20 },
 });

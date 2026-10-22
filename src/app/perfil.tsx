@@ -205,6 +205,7 @@ export default function TelaPerfil() {
               nome="nome"
               validar={validarNome}
               rotulo="Nome"
+              placeholder="Nome"
               icone="person-outline"
               autoCapitalize="words"
               editable={!salvando}
@@ -239,6 +240,7 @@ export default function TelaPerfil() {
               nome="email"
               validar={validarEmail}
               rotulo="E-mail"
+              placeholder="E-mail"
               icone="mail-outline"
               keyboardType="email-address"
               autoCapitalize="none"

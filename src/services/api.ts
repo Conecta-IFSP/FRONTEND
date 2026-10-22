@@ -93,6 +93,7 @@ export async function api<T>(
 export type Organizacao = {
   _id: string;
   nome: string;
+  cidade?: string;
   descricao?: string;
   status: 'PENDENTE' | 'APROVADA' | 'REVOGADA';
   criada_por?: { nome: string } | null;
@@ -146,7 +147,7 @@ export type Reuniao = {
   local: string;
   inicio: string;
   fim: string;
-  pauta: string[];
+  pauta: string;
   criada_por: string;
   situacao: 'AGENDADA' | 'CANCELADA';
   participantes: Participante[];

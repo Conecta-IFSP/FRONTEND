@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAwareScrollView, KeyboardStickyView } from 'react-native-keyboard-controller';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 
@@ -42,7 +42,9 @@ export function TelaComCabecalho({
   const router = useRouter();
   const { tema } = useTema();
   const { cores } = tema;
+  const margens = useSafeAreaInsets();
   const [atualizando, definirAtualizando] = useState(false);
+  const [alturaRodape, definirAlturaRodape] = useState(0);
   const voltar =
     aoVoltar ?? (() => (router.canGoBack() ? router.back() : router.replace('/inicio')));
   const corFundo = fundo === 'superficie' ? cores.superficie : cores.fundo;
@@ -103,7 +105,7 @@ export function TelaComCabecalho({
         style={[styles.tela, { backgroundColor: corFundo }]}
         contentContainerStyle={styles.conteudo}
         keyboardShouldPersistTaps="handled"
-        bottomOffset={ESPACO.lg}
+        bottomOffset={rodape ? alturaRodape + ESPACO.md : ESPACO.lg}
         refreshControl={
           aoAtualizar ? (
             <RefreshControl
@@ -119,14 +121,17 @@ export function TelaComCabecalho({
         {children}
       </KeyboardAwareScrollView>
       {rodape ? (
-        <View
-          style={[
-            styles.rodape,
-            { backgroundColor: cores.superficie, borderTopColor: cores.bordaSuave },
-          ]}
-        >
-          <View style={styles.larguraRodape}>{rodape}</View>
-        </View>
+        <KeyboardStickyView offset={{ closed: 0, opened: margens.bottom }}>
+          <View
+            onLayout={(evento) => definirAlturaRodape(evento.nativeEvent.layout.height)}
+            style={[
+              styles.rodape,
+              { backgroundColor: cores.superficie, borderTopColor: cores.bordaSuave },
+            ]}
+          >
+            <View style={styles.larguraRodape}>{rodape}</View>
+          </View>
+        </KeyboardStickyView>
       ) : null}
       {sobreposto}
     </SafeAreaView>

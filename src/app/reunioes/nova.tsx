@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 
 import { Avatar } from '@/components/Avatar';
 import { Botao } from '@/components/Botao';
@@ -28,9 +28,9 @@ import {
   validarTituloReuniao,
 } from '@/utils/validacao';
 
-const MAXIMO_ITENS_PAUTA = 30;
+const TAMANHO_MAXIMO_PAUTA = 2000;
 
-type DadosReuniao = { titulo: string; inicio: string; fim: string; local: string };
+type DadosReuniao = { titulo: string; inicio: string; fim: string; local: string; pauta: string };
 
 export default function TelaNovaReuniao() {
   const router = useRouter();
@@ -44,14 +44,13 @@ export default function TelaNovaReuniao() {
   });
   const [comissoes, definirComissoes] = useState<Comissao[]>([]);
   const [comissaoId, definirComissaoId] = useState('');
-  const [pauta, definirPauta] = useState<string[]>([]);
-  const [novoItem, definirNovoItem] = useState('');
   const [folha, definirFolha] = useState<'data' | 'convidados' | null>(null);
   const [carregando, definirCarregando] = useState(true);
   const [erro, definirErro] = useState('');
   const { control, handleSubmit, setError, trigger, formState } = useForm<DadosReuniao>({
-    defaultValues: { titulo: '', inicio: '', fim: '', local: '' },
+    defaultValues: { titulo: '', inicio: '', fim: '', local: '', pauta: '' },
   });
+  const pauta = useWatch({ control, name: 'pauta' });
   const salvando = formState.isSubmitting;
   const meuId = usuario?._id;
 
@@ -88,13 +87,6 @@ export default function TelaNovaReuniao() {
     .map((membro) => membro.usuario_id)
     .filter((pessoa): pessoa is PessoaComissao => Boolean(pessoa));
 
-  function adicionarItem() {
-    const texto = novoItem.trim();
-    if (!texto || pauta.length >= MAXIMO_ITENS_PAUTA) return;
-    definirPauta([...pauta, texto]);
-    definirNovoItem('');
-  }
-
   const salvar = handleSubmit(async (dados) => {
     definirErro('');
     const inicio = comHora(dia, minutosDaHora(dados.inicio) ?? 0);
@@ -103,15 +95,13 @@ export default function TelaNovaReuniao() {
       setError('fim', { message: 'Este horário já passou.' });
       return;
     }
-    const itens = novoItem.trim() ? [...pauta, novoItem.trim()] : pauta;
-
     const resultado = await api<Reuniao>('/reunioes', 'POST', {
       comissao_id: comissaoId,
       titulo: dados.titulo.trim(),
       local: dados.local.trim(),
       inicio: inicio.toISOString(),
       fim: fim.toISOString(),
-      pauta: itens.slice(0, MAXIMO_ITENS_PAUTA),
+      pauta: dados.pauta.trim(),
     });
 
     if (!resultado.ok) {
@@ -176,6 +166,7 @@ export default function TelaNovaReuniao() {
             nome="titulo"
             validar={validarTituloReuniao}
             rotulo="Título"
+            placeholder="Título"
             maxLength={120}
             editable={!salvando}
             compacto
@@ -202,7 +193,7 @@ export default function TelaNovaReuniao() {
                 }}
                 rotulo="Início"
                 icone="time-outline"
-                placeholder="00:00"
+                placeholder="Início"
                 keyboardType="number-pad"
                 maxLength={5}
                 editable={!salvando}
@@ -217,7 +208,7 @@ export default function TelaNovaReuniao() {
                 formatar={mascararHora}
                 rotulo="Término"
                 icone="time-outline"
-                placeholder="00:00"
+                placeholder="Término"
                 keyboardType="number-pad"
                 maxLength={5}
                 editable={!salvando}
@@ -231,77 +222,12 @@ export default function TelaNovaReuniao() {
             nome="local"
             validar={validarLocal}
             rotulo="Local"
+            placeholder="Local"
             icone="location-outline"
             maxLength={120}
             editable={!salvando}
             compacto
           />
-
-          <View>
-            <View style={styles.cabecalhoPauta}>
-              <Text style={[styles.rotulo, { color: cores.texto }]}>Pauta</Text>
-              <Text style={[styles.contagem, { color: cores.textoSutil }]}>
-                {plural(pauta.length, 'item', 'itens')}
-              </Text>
-            </View>
-            <View
-              style={[styles.pauta, { borderColor: cores.campoBorda, backgroundColor: cores.campoFundo }]}
-            >
-              {pauta.map((item, indice) => (
-                <View
-                  key={`${indice}-${item}`}
-                  style={[styles.itemPauta, { borderBottomColor: cores.bordaSuave }]}
-                >
-                  <View style={[styles.numero, { backgroundColor: cores.primariaSuave }]}>
-                    <Text style={[styles.textoNumero, { color: cores.primaria }]}>{indice + 1}</Text>
-                  </View>
-                  <Text style={[styles.textoItem, { color: cores.texto }]}>{item}</Text>
-                  <Pressable
-                    onPress={() => definirPauta(pauta.filter((_, posicao) => posicao !== indice))}
-                    disabled={salvando}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Remover ${item}`}
-                    hitSlop={4}
-                    style={styles.botaoItem}
-                  >
-                    <Ionicons name="close" size={18} color={cores.textoSutil} />
-                  </Pressable>
-                </View>
-              ))}
-              {pauta.length < MAXIMO_ITENS_PAUTA ? (
-                <View style={styles.itemNovo}>
-                  <View style={[styles.numero, styles.numeroNovo, { borderColor: cores.borda }]}>
-                    <Text style={[styles.textoNumero, { color: cores.textoSutil }]}>
-                      {pauta.length + 1}
-                    </Text>
-                  </View>
-                  <TextInput
-                    value={novoItem}
-                    onChangeText={definirNovoItem}
-                    onSubmitEditing={adicionarItem}
-                    submitBehavior="submit"
-                    returnKeyType="done"
-                    placeholder="Adicionar item"
-                    placeholderTextColor={cores.placeholder}
-                    accessibilityLabel="Novo item da pauta"
-                    maxLength={200}
-                    editable={!salvando}
-                    style={[styles.entradaItem, { color: cores.texto }]}
-                  />
-                  <Pressable
-                    onPress={adicionarItem}
-                    disabled={salvando}
-                    accessibilityRole="button"
-                    accessibilityLabel="Adicionar item"
-                    hitSlop={4}
-                    style={styles.botaoItem}
-                  >
-                    <Ionicons name="add" size={22} color={cores.primaria} />
-                  </Pressable>
-                </View>
-              ) : null}
-            </View>
-          </View>
 
           <View>
             <Text style={[styles.rotulo, { color: cores.texto }]}>Convidados</Text>
@@ -351,6 +277,20 @@ export default function TelaNovaReuniao() {
               <Ionicons name="chevron-forward" size={18} color={cores.textoSutil} />
             </Pressable>
           </View>
+
+          <CampoTextoControlado
+            controle={control}
+            nome="pauta"
+            rotulo="Pauta (opcional)"
+            placeholder="Pauta"
+            icone="list-outline"
+            dica={`${pauta.trim().length}/${TAMANHO_MAXIMO_PAUTA}`}
+            multiline
+            maxLength={TAMANHO_MAXIMO_PAUTA}
+            editable={!salvando}
+            compacto
+            style={styles.pauta}
+          />
         </>
       ) : null}
 
@@ -396,40 +336,9 @@ const styles = StyleSheet.create({
   opcao: { maxWidth: '100%' },
   horarios: { flexDirection: 'row', gap: ESPACO.md - 4 },
   horario: { flex: 1, minWidth: 0 },
-  cabecalhoPauta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   contagem: { fontFamily: FONTES.corpo, fontSize: 13, lineHeight: 18 },
-  pauta: { borderWidth: 1.5, borderRadius: RAIO.md, overflow: 'hidden' },
-  itemPauta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: ESPACO.md - 4,
-    minHeight: 48,
-    paddingLeft: ESPACO.md - 2,
-    paddingRight: ESPACO.xs,
-    borderBottomWidth: 1,
-  },
-  itemNovo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: ESPACO.md - 4,
-    minHeight: 48,
-    paddingLeft: ESPACO.md - 2,
-    paddingRight: ESPACO.xs,
-  },
-  numero: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  numeroNovo: { borderWidth: 1.5, borderStyle: 'dashed' },
-  textoNumero: { fontFamily: FONTES.titulo, fontSize: 12, lineHeight: 16 },
+  pauta: { minHeight: 180 },
   textoItem: { flex: 1, fontFamily: FONTES.corpo, fontSize: 15, lineHeight: 22 },
-  entradaItem: {
-    flex: 1,
-    minWidth: 0,
-    height: 48,
-    paddingHorizontal: 0,
-    fontFamily: FONTES.corpo,
-    fontSize: 15,
-    outlineWidth: 0,
-  },
-  botaoItem: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   convidados: {
     minHeight: 64,
     flexDirection: 'row',

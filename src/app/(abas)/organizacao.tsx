@@ -419,6 +419,12 @@ export default function TelaOrganizacao() {
                   {organizacao.nome}
                 </Text>
                 <Text style={[styles.detalhe, { color: cores.textoSuave }]}>{resumo}</Text>
+                {organizacao.cidade ? (
+                  <View style={styles.cidade}>
+                    <Ionicons name="location-outline" size={14} color={cores.textoSutil} />
+                    <Text style={[styles.detalhe, { color: cores.textoSuave }]}>{organizacao.cidade}</Text>
+                  </View>
+                ) : null}
                 {organizacao.descricao ? (
                   <Text style={[styles.descricao, { color: cores.textoSuave }]}>{organizacao.descricao}</Text>
                 ) : null}
@@ -732,6 +738,7 @@ export default function TelaOrganizacao() {
         <View style={styles.formulario}>
           <CampoTexto
             rotulo="E-mail da pessoa"
+            placeholder="E-mail"
             icone="mail-outline"
             value={email}
             onChangeText={(texto) => {
@@ -843,6 +850,7 @@ const styles = StyleSheet.create({
   textoLogo: { fontFamily: FONTES.titulo, fontSize: 22, lineHeight: 28 },
   nome: { fontFamily: FONTES.titulo, fontSize: 20, lineHeight: 28, marginTop: ESPACO.sm + 2 },
   descricao: { fontFamily: FONTES.corpo, fontSize: 14, lineHeight: 20, marginTop: ESPACO.sm },
+  cidade: { flexDirection: 'row', alignItems: 'center', gap: ESPACO.xs, marginTop: 2 },
   atalhos: { flexDirection: 'row', gap: ESPACO.sm, marginTop: ESPACO.md - 4 },
   atalho: {
     height: 36,

@@ -389,6 +389,7 @@ export default function TelaComissao() {
             nome="nome"
             validar={validarNomeComissao}
             rotulo="Nome"
+            placeholder="Nome"
             maxLength={100}
             editable={!salvando}
             compacto
@@ -398,6 +399,7 @@ export default function TelaComissao() {
             nome="descricao"
             validar={validarDescricao}
             rotulo="Descrição"
+            placeholder="Descrição"
             dica={`${descricao.length}/${TAMANHO_MAXIMO_DESCRICAO}`}
             maxLength={TAMANHO_MAXIMO_DESCRICAO}
             multiline
@@ -421,7 +423,8 @@ export default function TelaComissao() {
       >
         <View style={styles.formulario}>
           <CampoTexto
-            rotulo="Buscar por nome ou e-mail"
+            rotulo="Buscar"
+            placeholder="Nome ou e-mail"
             icone="search-outline"
             value={busca}
             onChangeText={definirBusca}

@@ -1,16 +1,14 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { useForm } from 'react-hook-form';
 
 import { Botao } from '@/components/Botao';
 import { CampoTextoControlado } from '@/components/CampoTexto';
-import { Cartao } from '@/components/Cartao';
 import { FaixaAviso, type Aviso } from '@/components/FaixaAviso';
-import { FundoGradiente } from '@/components/FundoGradiente';
-import { Logo } from '@/components/Logo';
-import { ESPACO, TIPOGRAFIA } from '@/constants/theme';
+import { TelaComCabecalho } from '@/components/TelaComCabecalho';
+import { TIPOGRAFIA } from '@/constants/theme';
 import { useTema } from '@/contexts/TemaContext';
 import { api } from '@/services/api';
 import { normalizarEmail, validarEmail } from '@/utils/validacao';
@@ -38,56 +36,44 @@ export default function TelaRecuperarConta() {
   });
 
   return (
-    <FundoGradiente aoVoltar={() => router.back()}>
-      <Logo largura={150} />
-
-      <Cartao style={styles.cartao}>
-        <Text style={[styles.titulo, { color: tema.cores.texto }]}>Recuperar conta</Text>
-        <Text style={[styles.descricao, { color: tema.cores.textoSuave }]}>
-          Informe o e-mail do cadastro. Enviaremos um link válido por 30 minutos para você criar uma
-          nova senha.
-        </Text>
-
-        {aviso ? (
-          <View style={styles.aviso}>
-            <FaixaAviso aviso={aviso} />
-          </View>
-        ) : null}
-
-        <View style={styles.campos}>
-          <CampoTextoControlado
-            controle={control}
-            nome="email"
-            validar={validarEmail}
-            rotulo="E-mail"
-            icone="mail-outline"
-            placeholder="E-mail"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            editable={!carregando}
-            returnKeyType="send"
-            onSubmitEditing={() => void enviar()}
-          />
-        </View>
-
+    <TelaComCabecalho
+      titulo="Recuperar conta"
+      aoVoltar={() => (router.canGoBack() ? router.back() : router.replace('/login'))}
+      rodape={
         <Botao
           titulo="Enviar link"
           tituloCarregando="Enviando..."
+          pilula
           carregando={carregando}
           aoTocar={() => void enviar()}
-          style={styles.botao}
         />
-      </Cartao>
-    </FundoGradiente>
+      }
+    >
+      <Text style={[styles.descricao, { color: tema.cores.textoSuave }]}>
+        Enviaremos um link para você criar uma nova senha.
+      </Text>
+
+      {aviso ? <FaixaAviso aviso={aviso} /> : null}
+
+      <CampoTextoControlado
+        controle={control}
+        nome="email"
+        validar={validarEmail}
+        rotulo="E-mail"
+        icone="mail-outline"
+        placeholder="E-mail"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoCorrect={false}
+        editable={!carregando}
+        returnKeyType="send"
+        onSubmitEditing={() => void enviar()}
+        compacto
+      />
+    </TelaComCabecalho>
   );
 }
 
 const styles = StyleSheet.create({
-  cartao: { marginTop: ESPACO.lg },
-  titulo: { ...TIPOGRAFIA.titulo },
-  descricao: { ...TIPOGRAFIA.corpoPequeno, marginTop: ESPACO.xs },
-  aviso: { marginTop: ESPACO.lg - 4 },
-  campos: { marginTop: ESPACO.lg },
-  botao: { marginTop: ESPACO.lg },
+  descricao: { ...TIPOGRAFIA.corpo },
 });

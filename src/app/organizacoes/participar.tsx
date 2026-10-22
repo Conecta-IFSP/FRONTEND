@@ -84,7 +84,7 @@ export default function TelaEntrarComCodigo() {
         nome="codigo"
         rotulo="Código"
         icone="key-outline"
-        placeholder="XXXXX-XXXXX"
+        placeholder="Código"
         validar={validarCodigo}
         formatar={mascararCodigo}
         autoCapitalize="characters"

@@ -98,6 +98,13 @@ export function validarTermino(inicio: string, fim: string) {
   return null;
 }
 
+export function validarCidade(cidade: string) {
+  const valor = cidade.trim();
+  if (valor.length < 2) return 'Informe a cidade.';
+  if (valor.length > 60) return 'A cidade deve ter no máximo 60 caracteres.';
+  return null;
+}
+
 export function validarDescricao(descricao: string) {
   if (descricao.trim().length > TAMANHO_MAXIMO_DESCRICAO) {
     return `A descrição deve ter no máximo ${TAMANHO_MAXIMO_DESCRICAO} caracteres.`;

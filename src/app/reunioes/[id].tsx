@@ -463,21 +463,13 @@ export default function TelaReuniao() {
       ) : null}
 
       {aba === 'pauta' ? (
-        reuniao.pauta.length === 0 ? (
-          <EstadoVazio icone="list-outline" mensagem="Nenhum item na pauta." />
+        !reuniao.pauta?.trim() ? (
+          <EstadoVazio icone="list-outline" mensagem="Sem pauta." />
         ) : (
-          <View style={[styles.lista, { backgroundColor: cores.superficie, borderColor: cores.bordaSuave }]}>
-            {reuniao.pauta.map((item, indice) => (
-              <View
-                key={`${indice}-${item}`}
-                style={[styles.itemPauta, indice > 0 ? { borderTopWidth: 1, borderTopColor: cores.bordaSuave } : null]}
-              >
-                <View style={[styles.numero, { backgroundColor: cores.primariaSuave }]}>
-                  <Text style={[styles.textoNumero, { color: cores.primaria }]}>{indice + 1}</Text>
-                </View>
-                <Text style={[styles.textoPauta, { color: cores.texto }]}>{item}</Text>
-              </View>
-            ))}
+          <View style={[styles.lista, styles.pauta, { backgroundColor: cores.superficie, borderColor: cores.bordaSuave }]}>
+            <Text style={[styles.textoPauta, { color: cores.texto }]} selectable>
+              {reuniao.pauta.trim()}
+            </Text>
           </View>
         )
       ) : null}
@@ -571,17 +563,8 @@ const styles = StyleSheet.create({
   redondo: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   pilula: { height: 36, paddingHorizontal: ESPACO.md - 2, borderRadius: 18, justifyContent: 'center' },
   textoPilula: { fontFamily: FONTES.corpoMedio, fontSize: 13, lineHeight: 18 },
-  itemPauta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: ESPACO.md - 4,
-    minHeight: 52,
-    paddingHorizontal: ESPACO.md - 2,
-    paddingVertical: ESPACO.xs,
-  },
-  numero: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  textoNumero: { fontFamily: FONTES.titulo, fontSize: 12, lineHeight: 16 },
-  textoPauta: { flex: 1, fontFamily: FONTES.corpo, fontSize: 15, lineHeight: 22 },
+  pauta: { paddingHorizontal: ESPACO.md, paddingVertical: ESPACO.md - 2 },
+  textoPauta: { fontFamily: FONTES.corpo, fontSize: 15, lineHeight: 22 },
   opcao: {
     flexDirection: 'row',
     alignItems: 'center',

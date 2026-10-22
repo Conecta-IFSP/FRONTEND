@@ -1,23 +1,23 @@
 import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+
 import { Botao } from '@/components/Botao';
-import { CampoTexto } from '@/components/CampoTexto';
-import { Cartao } from '@/components/Cartao';
 import { FaixaAviso } from '@/components/FaixaAviso';
-import { FundoGradiente } from '@/components/FundoGradiente';
-import { Logo } from '@/components/Logo';
-import { ESPACO, TIPOGRAFIA } from '@/constants/theme';
+import { TelaComCabecalho } from '@/components/TelaComCabecalho';
+import { ESPACO, FONTES, RAIO, TIPOGRAFIA } from '@/constants/theme';
 import { useTema } from '@/contexts/TemaContext';
 import { api } from '@/services/api';
 
 export default function TelaVerificarCadastro() {
   const router = useRouter();
   const { tema } = useTema();
+  const { cores } = tema;
   const parametros = useLocalSearchParams<{ email?: string }>();
   const [codigo, definirCodigo] = useState('');
   const [erro, definirErro] = useState('');
   const [carregando, definirCarregando] = useState(false);
+  const entrada = useRef<TextInput>(null);
 
   async function verificar() {
     const valor = codigo.toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -35,50 +35,77 @@ export default function TelaVerificarCadastro() {
     router.replace('/login');
   }
 
-  const entrada = useRef<TextInput>(null);
   const caracteres = codigo.replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 7).split('');
-  const focarEntrada = () => entrada.current?.focus();
 
-  return <FundoGradiente aoVoltar={() => router.back()}>
-    <Logo largura={150} />
-    <Cartao style={[styles.cartao, { borderColor: tema.cores.borda }]}>
-      <Text style={[styles.titulo, { color: tema.cores.texto }]}>Confirme seu e-mail</Text>
-      <Text style={[styles.descricao, { color: tema.cores.textoSuave }]}>Digite o código enviado para</Text>
-      <Text style={[styles.email, { color: tema.cores.texto }]}>{parametros.email}</Text>
-      {erro ? <View style={styles.aviso}><FaixaAviso aviso={{ tom: 'erro', titulo: 'Código inválido', mensagem: erro }} /></View> : null}
+  return (
+    <TelaComCabecalho
+      titulo="Confirmar e-mail"
+      aoVoltar={() => (router.canGoBack() ? router.back() : router.replace('/login'))}
+      rodape={
+        <Botao
+          titulo="Continuar"
+          tituloCarregando="Confirmando..."
+          pilula
+          carregando={carregando}
+          aoTocar={() => void verificar()}
+        />
+      }
+    >
+      <View>
+        <Text style={[styles.descricao, { color: cores.textoSuave }]}>Digite o código enviado para</Text>
+        <Text style={[styles.email, { color: cores.texto }]}>{parametros.email}</Text>
+      </View>
 
-      <Pressable style={styles.codigoLinha} onPress={focarEntrada} accessibilityLabel="Código de confirmação">
-        {Array.from({ length: 7 }, (_, indice) => <View key={indice} style={styles.grupo}>
-          <View style={[
-            styles.caixa,
-            { borderColor: tema.cores.campoBorda, backgroundColor: tema.cores.campoFundo },
-            indice === caracteres.length && [styles.caixaAtiva, { borderColor: tema.cores.campoBordaFoco, shadowColor: tema.cores.campoBordaFoco }],
-          ]}>
-            <Text style={[styles.caractere, { color: tema.cores.texto }]}>{caracteres[indice] ?? ''}</Text>
+      {erro ? <FaixaAviso aviso={{ tom: 'erro', titulo: 'Código inválido', mensagem: erro }} /> : null}
+
+      <Pressable
+        style={styles.codigoLinha}
+        onPress={() => entrada.current?.focus()}
+        accessibilityLabel="Código de confirmação"
+      >
+        {Array.from({ length: 7 }, (_, indice) => (
+          <View key={indice} style={styles.grupo}>
+            <View
+              style={[
+                styles.caixa,
+                {
+                  backgroundColor: cores.campoFundo,
+                  borderColor: indice === caracteres.length ? cores.campoBordaFoco : cores.campoBorda,
+                },
+              ]}
+            >
+              <Text style={[styles.caractere, { color: cores.texto }]}>{caracteres[indice] ?? ''}</Text>
+            </View>
+            {indice === 2 ? <Text style={[styles.separador, { color: cores.textoSuave }]}>-</Text> : null}
           </View>
-          {indice === 2 ? <Text style={[styles.separador, { color: tema.cores.textoSuave }]}>-</Text> : null}
-        </View>)}
+        ))}
       </Pressable>
-      <TextInput ref={entrada} value={codigo} onChangeText={(valor) => { definirCodigo(valor.replace(/[^a-z0-9]/gi, '').toUpperCase().slice(0, 7)); definirErro(''); }} maxLength={8} autoCapitalize="characters" autoCorrect={false} keyboardType="default" onSubmitEditing={verificar} editable={!carregando} style={styles.entradaOculta} />
-      <Botao titulo="Continuar" tituloCarregando="Confirmando..." carregando={carregando} aoTocar={verificar} style={styles.botao} />
-      <Text style={[styles.rodape, { color: tema.cores.textoSuave }]}>A equipe Conecta+ nunca solicitará seu código nesta tela.</Text>
-    </Cartao>
-  </FundoGradiente>;
+      <TextInput
+        ref={entrada}
+        value={codigo}
+        onChangeText={(valor) => {
+          definirCodigo(valor.replace(/[^a-z0-9]/gi, '').toUpperCase().slice(0, 7));
+          definirErro('');
+        }}
+        maxLength={8}
+        autoCapitalize="characters"
+        autoCorrect={false}
+        autoFocus
+        onSubmitEditing={() => void verificar()}
+        editable={!carregando}
+        style={styles.entradaOculta}
+      />
+    </TelaComCabecalho>
+  );
 }
 
 const styles = StyleSheet.create({
-  cartao: { marginTop: ESPACO.lg, paddingHorizontal: 28, paddingVertical: 30, borderWidth: 1, borderRadius: 16 },
-  titulo: { ...TIPOGRAFIA.titulo, textAlign: 'center', fontSize: 26, lineHeight: 34 },
-  descricao: { ...TIPOGRAFIA.corpoPequeno, marginTop: 22, textAlign: 'center', fontSize: 16 },
-  email: { textAlign: 'center', fontSize: 16, fontWeight: '600', marginTop: 3 },
-  aviso: { marginTop: ESPACO.lg - 4 },
-  codigoLinha: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 28, gap: 7 },
-  grupo: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  caixa: { width: 39, height: 54, borderWidth: 1.5, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  caixaAtiva: { borderWidth: 2, shadowOpacity: 0.18, shadowRadius: 3, shadowOffset: { width: 0, height: 0 } },
-  caractere: { fontSize: 28, fontWeight: '700' },
-  separador: { fontSize: 25, fontWeight: '600' },
+  descricao: { ...TIPOGRAFIA.corpo },
+  email: { fontFamily: FONTES.titulo, fontSize: 16, lineHeight: 24 },
+  codigoLinha: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: ESPACO.sm },
+  grupo: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  caixa: { width: 40, height: 52, borderWidth: 1.5, borderRadius: RAIO.md, alignItems: 'center', justifyContent: 'center' },
+  caractere: { fontFamily: FONTES.titulo, fontSize: 24, lineHeight: 30 },
+  separador: { fontFamily: FONTES.titulo, fontSize: 22 },
   entradaOculta: { position: 'absolute', width: 1, height: 1, opacity: 0 },
-  botao: { marginTop: 28 },
-  rodape: { ...TIPOGRAFIA.corpoPequeno, textAlign: 'center', marginTop: 24, fontSize: 13 },
 });

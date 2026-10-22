@@ -91,7 +91,7 @@ export default function TelaNovaComissao() {
         <>
           <Cartao style={styles.cartao}>
             <View>
-              <Text style={[styles.rotulo, { color: cores.textoSuave }]}>Organização *</Text>
+              <Text style={[styles.rotulo, { color: cores.textoSuave }]}>Organização</Text>
               <View style={styles.opcoes}>
                 {organizacoes.map((org) => (
                   <Opcao
@@ -110,7 +110,8 @@ export default function TelaNovaComissao() {
               controle={control}
               nome="nome"
               validar={validarNomeComissao}
-              rotulo="Nome da comissão *"
+              rotulo="Nome da comissão"
+              placeholder="Comissão"
               icone="people-outline"
               maxLength={100}
               editable={!salvando}
@@ -121,6 +122,7 @@ export default function TelaNovaComissao() {
               nome="descricao"
               validar={validarDescricao}
               rotulo="Descrição (opcional)"
+              placeholder="Descrição"
               icone="document-text-outline"
               dica={`${descricao.length}/${TAMANHO_MAXIMO_DESCRICAO}`}
               maxLength={TAMANHO_MAXIMO_DESCRICAO}

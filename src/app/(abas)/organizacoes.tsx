@@ -260,6 +260,14 @@ export default function TelaOrganizacoes() {
                       <Text style={[styles.nome, { color: cores.texto }]} numberOfLines={1}>
                         {organizacao.nome}
                       </Text>
+                      {organizacao.cidade ? (
+                        <View style={styles.linhaPapel}>
+                          <Ionicons name="location-outline" size={13} color={cores.textoSutil} />
+                          <Text style={[styles.detalhe, { color: cores.textoSuave }]} numberOfLines={1}>
+                            {organizacao.cidade}
+                          </Text>
+                        </View>
+                      ) : null}
                       <View style={styles.linhaPapel}>
                         <View
                           style={[

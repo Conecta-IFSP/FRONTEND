@@ -19,6 +19,7 @@ import { useTema } from '@/contexts/TemaContext';
 import { api, type Organizacao } from '@/services/api';
 import {
   TAMANHO_MAXIMO_DESCRICAO,
+  validarCidade,
   validarDescricao,
   validarNomeOrganizacao,
 } from '@/utils/validacao';
@@ -44,9 +45,9 @@ export default function TelaGerenciarOrganizacoes() {
   const [salvandoId, definirSalvandoId] = useState<string | null>(null);
   const [erro, definirErro] = useState('');
   const [editandoId, definirEditandoId] = useState<string | null>(null);
-  const edicao = useForm<{ nome: string; descricao: string }>({
+  const edicao = useForm<{ nome: string; cidade: string; descricao: string }>({
     mode: 'onChange',
-    defaultValues: { nome: '', descricao: '' },
+    defaultValues: { nome: '', cidade: '', descricao: '' },
   });
   const descricao = useWatch({ control: edicao.control, name: 'descricao' });
   const [acaoPendente, definirAcaoPendente] = useState<AcaoPendente | null>(null);
@@ -105,7 +106,13 @@ export default function TelaGerenciarOrganizacoes() {
 
   const salvarEdicao = edicao.handleSubmit(async (dados) => {
     if (!editandoId) return;
-    if (await atualizar(editandoId, { nome: dados.nome.trim(), descricao: dados.descricao.trim() })) {
+    if (
+      await atualizar(editandoId, {
+        nome: dados.nome.trim(),
+        cidade: dados.cidade.trim(),
+        descricao: dados.descricao.trim(),
+      })
+    ) {
       definirEditandoId(null);
     }
   });
@@ -137,7 +144,8 @@ export default function TelaGerenciarOrganizacoes() {
   return (
     <TelaComCabecalho titulo="Gerenciar organizações" aoAtualizar={() => carregar(busca.trim())}>
       <CampoTexto
-        rotulo="Buscar organização"
+        rotulo="Buscar"
+        placeholder="Organização"
         icone="search-outline"
         value={busca}
         onChangeText={definirBusca}
@@ -167,7 +175,18 @@ export default function TelaGerenciarOrganizacoes() {
                 nome="nome"
                 validar={validarNomeOrganizacao}
                 rotulo="Nome"
+                placeholder="Nome"
                 icone="business-outline"
+                editable={!salvando}
+              />
+              <CampoTextoControlado
+                controle={edicao.control}
+                nome="cidade"
+                validar={validarCidade}
+                rotulo="Cidade"
+                placeholder="Cidade"
+                icone="location-outline"
+                maxLength={60}
                 editable={!salvando}
               />
               <CampoTextoControlado
@@ -175,6 +194,7 @@ export default function TelaGerenciarOrganizacoes() {
                 nome="descricao"
                 validar={validarDescricao}
                 rotulo="Descrição"
+                placeholder="Descrição"
                 icone="document-text-outline"
                 dica={`${descricao.trim().length}/${TAMANHO_MAXIMO_DESCRICAO}`}
                 multiline
@@ -214,15 +234,22 @@ export default function TelaGerenciarOrganizacoes() {
               <BotaoIcone
                 icone="create-outline"
                 rotulo="Editar"
-                dica={`Editar o nome e a descrição de ${organizacao.nome}`}
+                dica={`Editar ${organizacao.nome}`}
                 desabilitado={salvando}
                 aoTocar={() => {
                   definirEditandoId(organizacao._id);
-                  edicao.reset({ nome: organizacao.nome, descricao: organizacao.descricao ?? '' });
+                  edicao.reset({
+                    nome: organizacao.nome,
+                    cidade: organizacao.cidade ?? '',
+                    descricao: organizacao.descricao ?? '',
+                  });
                 }}
               />
             </View>
 
+            {organizacao.cidade ? (
+              <Text style={[styles.texto, { color: cores.textoSuave }]}>{organizacao.cidade}</Text>
+            ) : null}
             {organizacao.descricao ? (
               <Text style={[styles.texto, { color: cores.textoSuave }]}>{organizacao.descricao}</Text>
             ) : null}

@@ -137,7 +137,8 @@ export default function TelaComissoes() {
           ) : null}
 
           <CampoTexto
-            rotulo="Buscar comissão ou organização"
+            rotulo="Buscar"
+            placeholder="Comissão"
             icone="search-outline"
             value={busca}
             onChangeText={definirBusca}
