@@ -13,12 +13,14 @@ import { EstadoVazio } from '@/components/EstadoVazio';
 import { FaixaAviso } from '@/components/FaixaAviso';
 import { FolhaInferior } from '@/components/FolhaInferior';
 import { Opcao } from '@/components/Opcao';
+import { SeletorPessoaComissao } from '@/components/SeletorPessoaComissao';
 import { TelaComCabecalho } from '@/components/TelaComCabecalho';
 import { ESPACO, FONTES, RAIO, TIPOGRAFIA } from '@/constants/theme';
 import { useSessao } from '@/contexts/SessaoContext';
 import { useTema } from '@/contexts/TemaContext';
 import { api, type Comissao, type PessoaComissao, type Reuniao } from '@/services/api';
 import { comHora, formatarData, inicioDoDia, jaPassou, lerChaveDia, plural } from '@/utils/reunioes';
+import { sugerirHorarios } from '@/utils/sugestoes-horario';
 import {
   mascararHora,
   minutosDaHora,
@@ -44,13 +46,17 @@ export default function TelaNovaReuniao() {
   });
   const [comissoes, definirComissoes] = useState<Comissao[]>([]);
   const [comissaoId, definirComissaoId] = useState('');
-  const [folha, definirFolha] = useState<'data' | 'convidados' | null>(null);
+  const [selecoes, definirSelecoes] = useState<Record<string, string[]>>({});
+  const [folha, definirFolha] = useState<'data' | 'convidados' | 'inicio' | 'fim' | null>(null);
+  const [agora, definirAgora] = useState(() => new Date());
   const [carregando, definirCarregando] = useState(true);
   const [erro, definirErro] = useState('');
-  const { control, handleSubmit, setError, trigger, formState } = useForm<DadosReuniao>({
+  const { control, handleSubmit, setError, setValue, trigger, formState } = useForm<DadosReuniao>({
     defaultValues: { titulo: '', inicio: '', fim: '', local: '', pauta: '' },
   });
   const pauta = useWatch({ control, name: 'pauta' });
+  const horaInicio = useWatch({ control, name: 'inicio' });
+  const horaFim = useWatch({ control, name: 'fim' });
   const salvando = formState.isSubmitting;
   const meuId = usuario?._id;
 
@@ -83,9 +89,29 @@ export default function TelaNovaReuniao() {
   }, [comissaoInicial, meuId]);
 
   const comissao = comissoes.find((item) => item._id === comissaoId);
-  const convidados = (comissao?.membros ?? [])
+  const pessoas = (comissao?.membros ?? [])
     .map((membro) => membro.usuario_id)
     .filter((pessoa): pessoa is PessoaComissao => Boolean(pessoa));
+  const escolhidos = selecoes[comissaoId] ?? pessoas.map((pessoa) => pessoa._id);
+  const convidados = pessoas.filter((pessoa) => pessoa._id === meuId || escolhidos.includes(pessoa._id));
+  const campoSugerido = folha === 'inicio' || folha === 'fim' ? folha : null;
+  const sugestoes = campoSugerido
+    ? sugerirHorarios(dia, agora, campoSugerido === 'fim' ? minutosDaHora(horaInicio) ?? undefined : undefined)
+    : [];
+
+  function alternarConvidado(pessoaId: string) {
+    definirSelecoes((anteriores) => ({
+      ...anteriores,
+      [comissaoId]: escolhidos.includes(pessoaId)
+        ? escolhidos.filter((item) => item !== pessoaId)
+        : [...escolhidos, pessoaId],
+    }));
+  }
+
+  function abrirSugestoes(campo: 'inicio' | 'fim') {
+    definirAgora(new Date());
+    definirFolha(campo);
+  }
 
   const salvar = handleSubmit(async (dados) => {
     definirErro('');
@@ -102,6 +128,7 @@ export default function TelaNovaReuniao() {
       inicio: inicio.toISOString(),
       fim: fim.toISOString(),
       pauta: dados.pauta.trim(),
+      convidados_ids: convidados.map((pessoa) => pessoa._id),
     });
 
     if (!resultado.ok) {
@@ -197,6 +224,11 @@ export default function TelaNovaReuniao() {
                 keyboardType="number-pad"
                 maxLength={5}
                 editable={!salvando}
+                acaoFinal={{
+                  icone: 'chevron-down',
+                  rotuloAcessivel: 'Sugestões de início',
+                  aoTocar: () => abrirSugestoes('inicio'),
+                }}
                 compacto
               />
             </View>
@@ -212,6 +244,11 @@ export default function TelaNovaReuniao() {
                 keyboardType="number-pad"
                 maxLength={5}
                 editable={!salvando}
+                acaoFinal={{
+                  icone: 'chevron-down',
+                  rotuloAcessivel: 'Sugestões de término',
+                  aoTocar: () => abrirSugestoes('fim'),
+                }}
                 compacto
               />
             </View>
@@ -233,8 +270,9 @@ export default function TelaNovaReuniao() {
             <Text style={[styles.rotulo, { color: cores.texto }]}>Convidados</Text>
             <Pressable
               onPress={() => definirFolha('convidados')}
+              disabled={salvando}
               accessibilityRole="button"
-              accessibilityLabel={`Convidados: membros da comissão, ${plural(convidados.length, 'pessoa', 'pessoas')}`}
+              accessibilityLabel={`Convidados, ${plural(convidados.length, 'pessoa', 'pessoas')}`}
               style={({ pressed }) => [
                 styles.convidados,
                 {
@@ -245,7 +283,9 @@ export default function TelaNovaReuniao() {
               ]}
             >
               <View style={styles.textosConvidados}>
-                <Text style={[styles.textoItem, { color: cores.texto }]}>Membros da comissão</Text>
+                <Text style={[styles.textoItem, { color: cores.texto }]}>
+                  {convidados.length === pessoas.length ? 'Toda a comissão' : 'Selecionados'}
+                </Text>
                 <Text style={[styles.contagem, { color: cores.textoSuave }]}>
                   {plural(convidados.length, 'pessoa', 'pessoas')}
                 </Text>
@@ -309,23 +349,48 @@ export default function TelaNovaReuniao() {
       </FolhaInferior>
 
       <FolhaInferior
-        visivel={folha === 'convidados'}
-        titulo="Convidados"
+        visivel={campoSugerido !== null}
+        titulo={campoSugerido === 'fim' ? 'Término' : 'Início'}
         aoFechar={() => definirFolha(null)}
       >
-        {convidados.map((pessoa) => (
-          <View key={pessoa._id} style={[styles.pessoa, { borderTopColor: cores.bordaSuave }]}>
-            <Avatar nome={pessoa.nome} colorido />
-            <View style={styles.textosConvidados}>
-              <Text style={[styles.textoItem, { color: cores.texto }]}>
-                {pessoa.nome}
-                {pessoa._id === meuId ? ' (você)' : ''}
-              </Text>
-              <Text style={[styles.contagem, { color: cores.textoSuave }]}>{pessoa.email}</Text>
-            </View>
-          </View>
-        ))}
+        <View style={styles.sugestoes}>
+          {sugestoes.map((hora) => (
+            <Opcao
+              key={hora}
+              titulo={hora}
+              selecionado={(campoSugerido === 'fim' ? horaFim : horaInicio) === hora}
+              aoTocar={() => {
+                if (!campoSugerido) return;
+                setValue(campoSugerido, hora, { shouldDirty: true, shouldValidate: true });
+                if (campoSugerido === 'inicio' && horaFim) void trigger('fim');
+                definirFolha(null);
+              }}
+              style={styles.hora}
+            />
+          ))}
+          {sugestoes.length === 0 ? (
+            <Text style={[styles.contagem, { color: cores.textoSuave }]}>Sem horários neste dia.</Text>
+          ) : null}
+        </View>
       </FolhaInferior>
+
+      <SeletorPessoaComissao
+        visivel={folha === 'convidados'}
+        titulo="Convidados"
+        multiplo
+        pessoas={pessoas}
+        selecionados={convidados.map((pessoa) => pessoa._id)}
+        fixos={meuId ? [meuId] : []}
+        usuarioId={meuId}
+        aoAlternar={alternarConvidado}
+        aoMarcarTodos={(todos) =>
+          definirSelecoes((anteriores) => ({
+            ...anteriores,
+            [comissaoId]: todos ? pessoas.map((pessoa) => pessoa._id) : [],
+          }))
+        }
+        aoFechar={() => definirFolha(null)}
+      />
     </TelaComCabecalho>
   );
 }
@@ -355,12 +420,12 @@ const styles = StyleSheet.create({
   restante: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   textoRestante: { fontFamily: FONTES.titulo, fontSize: 10, lineHeight: 12 },
   folhaCalendario: { paddingHorizontal: ESPACO.sm },
-  pessoa: {
+  sugestoes: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: ESPACO.md - 4,
+    flexWrap: 'wrap',
+    gap: ESPACO.sm,
     paddingHorizontal: ESPACO.md,
-    paddingVertical: ESPACO.sm + 2,
-    borderTopWidth: 1,
+    paddingBottom: ESPACO.sm,
   },
+  hora: { minWidth: 76 },
 });

@@ -61,6 +61,7 @@ function Navegacao() {
           <Stack.Screen name="(abas)" />
           <Stack.Screen name="perfil" />
           <Stack.Screen name="login/alterar-senha" />
+          <Stack.Screen name="login/trocar-email" />
         </Stack.Protected>
         <Stack.Protected guard={usuario?.tipo === 'ADMIN_SISTEMA'}>
           <Stack.Screen name="organizacoes/aprovacao" />
@@ -69,13 +70,11 @@ function Navegacao() {
         <Stack.Protected guard={usuario?.tipo === 'USUARIO'}>
           <Stack.Screen name="organizacoes/cadastro" />
           <Stack.Screen name="organizacoes/participar" />
-          <Stack.Screen name="organizacoes/membros" />
-          <Stack.Screen name="comissoes/index" />
-          <Stack.Screen name="comissoes/minhas" />
           <Stack.Screen name="comissoes/nova" />
           <Stack.Screen name="comissoes/[id]" />
           <Stack.Screen name="reunioes/nova" />
           <Stack.Screen name="reunioes/[id]" />
+          <Stack.Screen name="reunioes/registros" />
         </Stack.Protected>
       </Stack>
     </>

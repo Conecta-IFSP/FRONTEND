@@ -1,7 +1,19 @@
 import type { ReactNode } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons, type IoniconsIconName } from '@react-native-vector-icons/ionicons';
+import {
+  Ionicons,
+  type IoniconsIconName,
+} from '@react-native-vector-icons/ionicons';
 
 import { ESPACO, FONTES, RAIO, TIPOGRAFIA } from '@/constants/theme';
 import { useTema } from '@/contexts/TemaContext';
@@ -12,45 +24,75 @@ type FolhaInferiorProps = {
   topo?: ReactNode;
   aoFechar: () => void;
   children: ReactNode;
+  acompanharTeclado?: boolean;
 };
 
-export function FolhaInferior({ visivel, titulo, topo, aoFechar, children }: FolhaInferiorProps) {
+export function FolhaInferior({
+  visivel,
+  titulo,
+  topo,
+  aoFechar,
+  children,
+  acompanharTeclado = false,
+}: FolhaInferiorProps) {
   const { tema } = useTema();
   const { cores } = tema;
   const margens = useSafeAreaInsets();
 
   return (
-    <Modal visible={visivel} transparent animationType="slide" onRequestClose={aoFechar}>
-      <View style={styles.tela}>
+    <Modal
+      visible={visivel}
+      transparent
+      animationType="slide"
+      onRequestClose={aoFechar}
+    >
+      <KeyboardAvoidingView
+        style={styles.tela}
+        enabled={acompanharTeclado}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Fechar"
           onPress={aoFechar}
-          style={[StyleSheet.absoluteFill, { backgroundColor: cores.sobreposicao }]}
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: cores.sobreposicao },
+          ]}
         />
         <View
           accessibilityViewIsModal
           style={[
             styles.folha,
-            { backgroundColor: cores.superficie, paddingBottom: margens.bottom + ESPACO.md },
+            {
+              backgroundColor: cores.superficie,
+              paddingBottom: margens.bottom + ESPACO.md,
+            },
           ]}
         >
           <View style={styles.alca}>
             <View style={[styles.traco, { backgroundColor: cores.borda }]} />
           </View>
           {titulo ? (
-            <Text style={[styles.titulo, { color: cores.texto }]} accessibilityRole="header">
+            <Text
+              style={[styles.titulo, { color: cores.texto }]}
+              accessibilityRole="header"
+            >
               {titulo}
             </Text>
           ) : null}
           {topo ? (
-            <View style={[styles.topo, { borderBottomColor: cores.bordaSuave }]}>{topo}</View>
+            <View
+              style={[styles.topo, { borderBottomColor: cores.bordaSuave }]}
+            >
+              {topo}
+            </View>
           ) : null}
           <ScrollView bounces={false} keyboardShouldPersistTaps="handled">
             {children}
           </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -63,7 +105,13 @@ type OpcaoFolhaProps = {
   desabilitado?: boolean;
 };
 
-export function OpcaoFolha({ icone, rotulo, aoTocar, perigo = false, desabilitado = false }: OpcaoFolhaProps) {
+export function OpcaoFolha({
+  icone,
+  rotulo,
+  aoTocar,
+  perigo = false,
+  desabilitado = false,
+}: OpcaoFolhaProps) {
   const { cores } = useTema().tema;
 
   return (
@@ -71,10 +119,24 @@ export function OpcaoFolha({ icone, rotulo, aoTocar, perigo = false, desabilitad
       onPress={aoTocar}
       disabled={desabilitado}
       accessibilityRole="button"
-      style={({ pressed }) => [styles.opcao, { opacity: desabilitado ? 0.5 : pressed ? 0.6 : 1 }]}
+      style={({ pressed }) => [
+        styles.opcao,
+        { opacity: desabilitado ? 0.5 : pressed ? 0.6 : 1 },
+      ]}
     >
-      <Ionicons name={icone} size={22} color={perigo ? cores.erro : cores.textoSuave} />
-      <Text style={[styles.textoOpcao, { color: perigo ? cores.erro : cores.texto }]}>{rotulo}</Text>
+      <Ionicons
+        name={icone}
+        size={22}
+        color={perigo ? cores.erro : cores.textoSuave}
+      />
+      <Text
+        style={[
+          styles.textoOpcao,
+          { color: perigo ? cores.erro : cores.texto },
+        ]}
+      >
+        {rotulo}
+      </Text>
     </Pressable>
   );
 }
@@ -92,7 +154,13 @@ const styles = StyleSheet.create({
   },
   alca: { alignItems: 'center', paddingBottom: ESPACO.xs },
   traco: { width: 32, height: 4, borderRadius: 2 },
-  titulo: { ...TIPOGRAFIA.subtitulo, fontSize: 16, lineHeight: 24, paddingHorizontal: ESPACO.md, paddingVertical: ESPACO.sm },
+  titulo: {
+    ...TIPOGRAFIA.subtitulo,
+    fontSize: 16,
+    lineHeight: 24,
+    paddingHorizontal: ESPACO.md,
+    paddingVertical: ESPACO.sm,
+  },
   topo: {
     paddingHorizontal: ESPACO.md,
     paddingTop: ESPACO.sm,

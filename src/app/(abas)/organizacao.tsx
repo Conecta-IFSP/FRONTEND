@@ -56,6 +56,7 @@ export default function TelaOrganizacao() {
   const [escolha, definirEscolha] = useState<{ id: string; aba: Aba } | null>(null);
   const [filtro, definirFiltro] = useState<Filtro>('Todas');
   const [busca, definirBusca] = useState('');
+  const [buscaComissao, definirBuscaComissao] = useState('');
   const [atualizando, definirAtualizando] = useState(false);
   const [aviso, definirAviso] = useState<Aviso | null>(null);
   const [menu, definirMenu] = useState<Membro | null>(null);
@@ -126,8 +127,10 @@ export default function TelaOrganizacao() {
   const aba: Aba = admin ? (escolha?.id === id ? escolha.aba : abaInicial === 'membros' ? 'membros' : 'comissoes') : 'comissoes';
   const hoje = new Date(atual?.momento ?? 0);
 
+  const termoComissao = buscaComissao.trim().toLocaleLowerCase('pt-BR');
   const comissoes = (atual?.comissoes ?? [])
     .filter((comissao) => filtro === 'Todas' || comissao.ativo === (filtro === 'Ativas'))
+    .filter((comissao) => comissao.nome.toLocaleLowerCase('pt-BR').includes(termoComissao))
     .sort((a, b) => Number(b.ativo) - Number(a.ativo) || a.nome.localeCompare(b.nome, 'pt-BR'));
   const aprovados = (membros ?? []).filter((membro) => membro.status === 'APROVADO');
   const pedidos = (membros ?? []).filter((membro) => membro.status === 'PENDENTE');
@@ -486,6 +489,22 @@ export default function TelaOrganizacao() {
 
           {organizacao && aba === 'comissoes' ? (
             <>
+              {(atual?.comissoes.length ?? 0) > 0 ? (
+                <View style={[styles.busca, { backgroundColor: cores.superficie, borderColor: cores.bordaSuave }]}>
+                  <Ionicons name="search" size={20} color={cores.textoSutil} />
+                  <TextInput
+                    value={buscaComissao}
+                    onChangeText={definirBuscaComissao}
+                    placeholder="Buscar"
+                    placeholderTextColor={cores.placeholder}
+                    accessibilityLabel="Buscar comissão"
+                    autoCorrect={false}
+                    returnKeyType="search"
+                    style={[styles.entradaBusca, { color: cores.texto }]}
+                  />
+                </View>
+              ) : null}
+
               {admin ? (
                 <View style={styles.filtros}>
                   {FILTROS.map((item) => {
@@ -515,7 +534,9 @@ export default function TelaOrganizacao() {
               ) : null}
 
               {comissoes.length === 0 ? (
-                <Text style={[styles.vazio, { color: cores.textoSuave }]}>Nenhuma comissão.</Text>
+                <Text style={[styles.vazio, { color: cores.textoSuave }]}>
+                  {termoComissao ? 'Nenhuma comissão encontrada.' : 'Nenhuma comissão.'}
+                </Text>
               ) : null}
 
               {comissoes.map((comissao) => {

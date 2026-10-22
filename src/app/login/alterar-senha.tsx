@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { useForm } from 'react-hook-form';
 
 import { Botao } from '@/components/Botao';
 import { CampoTextoControlado } from '@/components/CampoTexto';
-import { Cartao } from '@/components/Cartao';
-import { FaixaAviso, type Aviso } from '@/components/FaixaAviso';
+import { FaixaAviso } from '@/components/FaixaAviso';
 import { TelaComCabecalho } from '@/components/TelaComCabecalho';
 import { ESPACO, TIPOGRAFIA } from '@/constants/theme';
 import { useTema } from '@/contexts/TemaContext';
@@ -17,46 +18,77 @@ type DadosSenha = { atual: string; nova: string; confirmacao: string };
 const VAZIO: DadosSenha = { atual: '', nova: '', confirmacao: '' };
 
 export default function TelaAlterarSenha() {
-  const { tema } = useTema();
-  const { control, handleSubmit, reset, formState } = useForm<DadosSenha>({ defaultValues: VAZIO });
+  const router = useRouter();
+  const { cores } = useTema().tema;
+  const { control, handleSubmit, formState } = useForm<DadosSenha>({ defaultValues: VAZIO });
   const carregando = formState.isSubmitting;
-  const [aviso, definirAviso] = useState<Aviso | null>(null);
+  const [erro, definirErro] = useState('');
+  const [concluido, definirConcluido] = useState(false);
+  const [visiveis, definirVisiveis] = useState<Record<keyof DadosSenha, boolean>>({
+    atual: false,
+    nova: false,
+    confirmacao: false,
+  });
 
   const salvar = handleSubmit(async ({ atual, nova }) => {
-    definirAviso(null);
+    definirErro('');
     const resultado = await api('/usuarios/me/senha', 'PATCH', {
       senha_atual: atual,
       nova_senha: nova,
     });
 
     if (!resultado.ok) {
-      definirAviso({ tom: 'erro', titulo: 'Não foi possível alterar', mensagem: resultado.erro });
+      definirErro(resultado.erro);
       return;
     }
 
-    reset(VAZIO);
-    definirAviso({
-      tom: 'sucesso',
-      titulo: 'Senha alterada',
-      mensagem: 'Use a nova senha no próximo acesso.',
-    });
+    definirConcluido(true);
   });
 
+  function voltar() {
+    if (router.canGoBack()) router.back();
+    else router.replace('/perfil');
+  }
+
+  function olho(campo: keyof DadosSenha) {
+    return {
+      icone: visiveis[campo] ? ('eye-off-outline' as const) : ('eye-outline' as const),
+      rotuloAcessivel: visiveis[campo] ? 'Ocultar senha' : 'Mostrar senha',
+      aoTocar: () => definirVisiveis((atuais) => ({ ...atuais, [campo]: !atuais[campo] })),
+    };
+  }
+
   return (
-    <TelaComCabecalho titulo="Alterar senha">
-      <Cartao>
-        <Text style={[styles.titulo, { color: tema.cores.texto }]}>Segurança da conta</Text>
-        <Text style={[styles.descricao, { color: tema.cores.textoSuave }]}>
-          Confirme sua senha atual antes de escolher uma nova.
-        </Text>
+    <TelaComCabecalho
+      titulo="Alterar senha"
+      aoVoltar={voltar}
+      rodape={
+        concluido ? (
+          <Botao titulo="Voltar ao perfil" pilula aoTocar={voltar} />
+        ) : (
+          <Botao
+            titulo="Alterar senha"
+            tituloCarregando="Salvando..."
+            pilula
+            carregando={carregando}
+            aoTocar={() => void salvar()}
+          />
+        )
+      }
+    >
+      {erro ? <FaixaAviso aviso={{ tom: 'erro', mensagem: erro }} /> : null}
 
-        {aviso ? (
-          <View style={styles.aviso}>
-            <FaixaAviso aviso={aviso} />
+      {concluido ? (
+        <View style={styles.concluido}>
+          <View style={[styles.selo, { backgroundColor: cores.sucessoSuave }]}>
+            <Ionicons name="checkmark" size={34} color={cores.sucesso} />
           </View>
-        ) : null}
-
-        <View style={styles.campos}>
+          <Text style={[styles.titulo, { color: cores.texto }]} accessibilityRole="header">
+            Senha alterada
+          </Text>
+        </View>
+      ) : (
+        <>
           <CampoTextoControlado
             controle={control}
             nome="atual"
@@ -64,9 +96,13 @@ export default function TelaAlterarSenha() {
             rotulo="Senha atual"
             placeholder="Senha atual"
             icone="lock-closed-outline"
-            secureTextEntry
+            secureTextEntry={!visiveis.atual}
             autoCapitalize="none"
+            autoComplete="current-password"
+            textContentType="password"
             editable={!carregando}
+            acaoFinal={olho('atual')}
+            compacto
           />
 
           <CampoTextoControlado
@@ -76,9 +112,13 @@ export default function TelaAlterarSenha() {
             rotulo="Nova senha"
             placeholder="Nova senha"
             icone="key-outline"
-            secureTextEntry
+            secureTextEntry={!visiveis.nova}
             autoCapitalize="none"
+            autoComplete="new-password"
+            textContentType="newPassword"
             editable={!carregando}
+            acaoFinal={olho('nova')}
+            compacto
           />
 
           <CampoTextoControlado
@@ -88,30 +128,24 @@ export default function TelaAlterarSenha() {
             rotulo="Confirmar nova senha"
             placeholder="Confirmar senha"
             icone="checkmark-circle-outline"
-            secureTextEntry
+            secureTextEntry={!visiveis.confirmacao}
             autoCapitalize="none"
+            autoComplete="new-password"
+            textContentType="newPassword"
             editable={!carregando}
+            acaoFinal={olho('confirmacao')}
             returnKeyType="go"
             onSubmitEditing={() => void salvar()}
+            compacto
           />
-        </View>
-
-        <Botao
-          titulo="Alterar senha"
-          tituloCarregando="Salvando..."
-          carregando={carregando}
-          aoTocar={() => void salvar()}
-          style={styles.botao}
-        />
-      </Cartao>
+        </>
+      )}
     </TelaComCabecalho>
   );
 }
 
 const styles = StyleSheet.create({
-  titulo: { ...TIPOGRAFIA.titulo },
-  descricao: { ...TIPOGRAFIA.corpoPequeno, marginTop: ESPACO.xs },
-  aviso: { marginTop: ESPACO.lg - 4 },
-  campos: { marginTop: ESPACO.lg, gap: ESPACO.md },
-  botao: { marginTop: ESPACO.lg },
+  concluido: { alignItems: 'center', gap: ESPACO.sm, paddingTop: ESPACO.xl },
+  selo: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
+  titulo: { ...TIPOGRAFIA.subtitulo },
 });

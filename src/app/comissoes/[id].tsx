@@ -16,7 +16,7 @@ import { Etiqueta } from '@/components/Etiqueta';
 import { FaixaAviso } from '@/components/FaixaAviso';
 import { FolhaInferior, OpcaoFolha } from '@/components/FolhaInferior';
 import { ItemReuniao } from '@/components/ItemReuniao';
-import { Opcao } from '@/components/Opcao';
+import { SeletorPessoaComissao } from '@/components/SeletorPessoaComissao';
 import { TelaComCabecalho } from '@/components/TelaComCabecalho';
 import { ESPACO, FONTES } from '@/constants/theme';
 import { useSessao } from '@/contexts/SessaoContext';
@@ -31,11 +31,6 @@ import {
 } from '@/services/api';
 import { plural } from '@/utils/reunioes';
 import { TAMANHO_MAXIMO_DESCRICAO, validarDescricao, validarNomeComissao } from '@/utils/validacao';
-
-const PAPEIS: { valor: PapelComissao; rotulo: string }[] = [
-  { valor: 'MEMBRO', rotulo: 'Membro' },
-  { valor: 'RESPONSAVEL', rotulo: 'Responsável' },
-];
 
 type AcaoPendente = {
   mensagem: string;
@@ -67,7 +62,6 @@ export default function TelaComissao() {
   const { reset } = dados;
   const descricao = useWatch({ control: dados.control, name: 'descricao' });
   const [busca, definirBusca] = useState('');
-  const [papel, definirPapel] = useState<PapelComissao>('MEMBRO');
   const [confirmacao, definirConfirmacao] = useState<AcaoPendente | null>(null);
   const [carregando, definirCarregando] = useState(true);
   const [salvando, definirSalvando] = useState(false);
@@ -76,7 +70,7 @@ export default function TelaComissao() {
   const [aba, definirAba] = useState<'reunioes' | 'equipe'>(criada === '1' ? 'equipe' : 'reunioes');
   const [reunioes, definirReunioes] = useState<Reuniao[]>([]);
   const [agora, definirAgora] = useState(() => Date.now());
-  const [folha, definirFolha] = useState<'opcoes' | 'editar' | 'adicionar' | null>(null);
+  const [folha, definirFolha] = useState<'opcoes' | 'editar' | 'adicionar' | 'responsavel' | null>(null);
   const [escolhido, definirEscolhido] = useState<Integrante | null>(null);
 
   const buscarReunioes = useCallback(async () => {
@@ -204,6 +198,20 @@ export default function TelaComissao() {
     { titulo: 'Anteriores', lista: anteriores },
   ].filter((bloco) => bloco.lista.length > 0);
   const podeEditarEquipe = gerencia && Boolean(comissao?.ativo);
+  const responsavelAtual = integrantes.find((integrante) => integrante.papel === 'RESPONSAVEL');
+
+  function trocarResponsavel(alvo: PessoaComissao) {
+    definirFolha(null);
+    definirEscolhido(null);
+    definirConfirmacao({
+      mensagem: responsavelAtual
+        ? `${alvo.nome} será o responsável. ${responsavelAtual.pessoa.nome} passa a membro.`
+        : `${alvo.nome} será o responsável.`,
+      rotulo: 'Confirmar',
+      acao: () => api<Comissao>(`/comissoes/${id}/responsavel`, 'PATCH', { usuario_id: alvo._id }),
+      sucesso: 'Responsável atualizado.',
+    });
+  }
 
   return (
     <TelaComCabecalho
@@ -353,6 +361,13 @@ export default function TelaComissao() {
       ) : null}
 
       <FolhaInferior visivel={folha === 'opcoes'} titulo={comissao?.nome} aoFechar={() => definirFolha(null)}>
+        {podeEditarEquipe ? (
+          <OpcaoFolha
+            icone="shield-checkmark-outline"
+            rotulo="Trocar responsável"
+            aoTocar={() => definirFolha('responsavel')}
+          />
+        ) : null}
         <OpcaoFolha
           icone="create-outline"
           rotulo="Editar dados"
@@ -433,17 +448,6 @@ export default function TelaComissao() {
             returnKeyType="search"
             compacto
           />
-          <View style={styles.opcoes}>
-            {PAPEIS.map((opcao) => (
-              <Opcao
-                key={opcao.valor}
-                titulo={opcao.rotulo}
-                selecionado={papel === opcao.valor}
-                desabilitado={salvando}
-                aoTocar={() => definirPapel(opcao.valor)}
-              />
-            ))}
-          </View>
           {disponiveis.length === 0 ? (
             <Text style={[styles.detalhe, { color: cores.textoSuave }]}>Ninguém disponível para esta busca.</Text>
           ) : null}
@@ -468,7 +472,7 @@ export default function TelaComissao() {
               desabilitado={salvando}
               aoTocar={() =>
                 void executar(
-                  () => api<Comissao>(`/comissoes/${id}/membros`, 'POST', { usuario_id: pessoa._id, papel }),
+                  () => api<Comissao>(`/comissoes/${id}/membros`, 'POST', { usuario_id: pessoa._id, papel: 'MEMBRO' }),
                   `${pessoa.nome} entrou na comissão.`,
                 )
               }
@@ -492,22 +496,22 @@ export default function TelaComissao() {
           ) : null
         }
       >
-        {escolhido ? (
+        {escolhido?.papel === 'RESPONSAVEL' ? (
+          <OpcaoFolha
+            icone="shield-checkmark-outline"
+            rotulo="Trocar responsável"
+            aoTocar={() => {
+              definirEscolhido(null);
+              definirFolha('responsavel');
+            }}
+          />
+        ) : null}
+        {escolhido && escolhido.papel !== 'RESPONSAVEL' ? (
           <>
             <OpcaoFolha
               icone="shield-checkmark-outline"
-              rotulo={escolhido.papel === 'RESPONSAVEL' ? 'Tornar membro' : 'Tornar responsável'}
-              aoTocar={() => {
-                const alvo = escolhido;
-                definirEscolhido(null);
-                void executar(
-                  () =>
-                    api<Comissao>(`/comissoes/${id}/membros/${alvo.pessoa._id}`, 'PATCH', {
-                      papel: alvo.papel === 'RESPONSAVEL' ? 'MEMBRO' : 'RESPONSAVEL',
-                    }),
-                  'Papel do integrante atualizado.',
-                );
-              }}
+              rotulo="Tornar responsável"
+              aoTocar={() => trocarResponsavel(escolhido.pessoa)}
             />
             <OpcaoFolha
               icone="person-remove-outline"
@@ -528,6 +532,19 @@ export default function TelaComissao() {
           </>
         ) : null}
       </FolhaInferior>
+
+      <SeletorPessoaComissao
+        visivel={folha === 'responsavel'}
+        titulo="Responsável"
+        pessoas={pessoas}
+        selecionados={responsavelAtual ? [responsavelAtual.pessoa._id] : []}
+        usuarioId={usuario?._id}
+        aoAlternar={(pessoaId) => {
+          const alvo = pessoas.find((pessoa) => pessoa._id === pessoaId);
+          if (alvo && pessoaId !== responsavelAtual?.pessoa._id) trocarResponsavel(alvo);
+        }}
+        aoFechar={() => definirFolha((atual) => (atual === 'responsavel' ? null : atual))}
+      />
 
       <Confirmacao
         mensagem={confirmacao?.mensagem}
@@ -570,5 +587,4 @@ const styles = StyleSheet.create({
   nomeTopo: { fontFamily: FONTES.titulo, fontSize: 15, lineHeight: 22 },
   botaoMenu: { width: 40, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -ESPACO.sm },
   formulario: { paddingHorizontal: ESPACO.md, paddingBottom: ESPACO.md, gap: ESPACO.md },
-  opcoes: { flexDirection: 'row', flexWrap: 'wrap', gap: ESPACO.sm },
 });

@@ -106,6 +106,7 @@ export function TelaComCabecalho({
         contentContainerStyle={styles.conteudo}
         keyboardShouldPersistTaps="handled"
         bottomOffset={rodape ? alturaRodape + ESPACO.md : ESPACO.lg}
+        alwaysBounceVertical={Boolean(aoAtualizar)}
         refreshControl={
           aoAtualizar ? (
             <RefreshControl

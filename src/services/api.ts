@@ -140,7 +140,18 @@ export type Participante = {
   presenca?: Presenca;
 };
 
+export type Ata = {
+  conteudo: string;
+  versao: number;
+  situacao: 'RASCUNHO' | 'EM_APROVACAO' | 'APROVADA';
+  autor_id: string;
+  atualizada_em: string;
+  aprovadores: string[];
+  aprovacoes: string[];
+};
+
 export type Reuniao = {
+  ata?: Ata;
   _id: string;
   comissao_id: { _id: string; nome: string; organizacao_id: string } | null;
   titulo: string;

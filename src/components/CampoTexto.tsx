@@ -249,7 +249,63 @@ export function CampoSelecao({
   );
 }
 
+type CampoCodigoProps = {
+  valor: string;
+  aoMudar: (valor: string) => void;
+  aoEnviar?: () => void;
+  desabilitado?: boolean;
+  focoAutomatico?: boolean;
+};
+
+export function CampoCodigo({ valor, aoMudar, aoEnviar, desabilitado = false, focoAutomatico = true }: CampoCodigoProps) {
+  const { cores } = useTema().tema;
+  const [entrada, definirEntrada] = useState<TextInput | null>(null);
+  const caracteres = valor.split('');
+
+  return (
+    <View>
+      <Pressable style={styles.codigoLinha} onPress={() => entrada?.focus()} accessibilityLabel="Código">
+        {Array.from({ length: 7 }, (_, indice) => (
+          <View key={indice} style={styles.codigoGrupo}>
+            <View
+              style={[
+                styles.codigoCaixa,
+                {
+                  backgroundColor: cores.campoFundo,
+                  borderColor: indice === caracteres.length ? cores.campoBordaFoco : cores.campoBorda,
+                },
+              ]}
+            >
+              <Text style={[styles.codigoCaractere, { color: cores.texto }]}>{caracteres[indice] ?? ''}</Text>
+            </View>
+            {indice === 2 ? <Text style={[styles.codigoSeparador, { color: cores.textoSuave }]}>-</Text> : null}
+          </View>
+        ))}
+      </Pressable>
+      <TextInput
+        ref={definirEntrada}
+        value={valor}
+        onChangeText={(texto) => aoMudar(texto.replace(/[^a-z0-9]/gi, '').toUpperCase().slice(0, 7))}
+        maxLength={8}
+        autoCapitalize="characters"
+        autoCorrect={false}
+        autoComplete="one-time-code"
+        autoFocus={focoAutomatico}
+        onSubmitEditing={aoEnviar}
+        editable={!desabilitado}
+        style={styles.codigoOculto}
+      />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  codigoLinha: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: ESPACO.sm },
+  codigoGrupo: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  codigoCaixa: { width: 40, height: 52, borderWidth: 1.5, borderRadius: RAIO.md, alignItems: 'center', justifyContent: 'center' },
+  codigoCaractere: { fontFamily: FONTES.titulo, fontSize: 24, lineHeight: 30 },
+  codigoSeparador: { fontFamily: FONTES.titulo, fontSize: 22 },
+  codigoOculto: { position: 'absolute', width: 1, height: 1, opacity: 0 },
   container: { width: '100%' },
   rotulo: { ...TIPOGRAFIA.rotulo, marginBottom: ESPACO.sm },
   caixa: {

@@ -10,6 +10,7 @@ import { TelaComCabecalho } from '@/components/TelaComCabecalho';
 import { TIPOGRAFIA } from '@/constants/theme';
 import { useTema } from '@/contexts/TemaContext';
 import { api } from '@/services/api';
+import { autenticarComDispositivo } from '@/services/autenticacao-local';
 import { validarConfirmacaoSenha, validarSenha } from '@/utils/validacao';
 
 export default function TelaRedefinirSenha() {
@@ -25,6 +26,8 @@ export default function TelaRedefinirSenha() {
 
   const redefinir = handleSubmit(async ({ senha }) => {
     definirAviso(null);
+    const autenticado = await autenticarComDispositivo().catch(() => false);
+    if (!autenticado) return;
     const resultado = await api('/auth/redefinir-senha', 'POST', { token, nova_senha: senha });
     definirRedefinida(resultado.ok);
     definirAviso(

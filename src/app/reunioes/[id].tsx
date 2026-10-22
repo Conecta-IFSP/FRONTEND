@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 
 import { Abas } from '@/components/Abas';
@@ -24,6 +24,7 @@ import {
   intervalo,
   meuParticipante,
   plural,
+  situacaoDaAta,
   situacaoDaReuniao,
 } from '@/utils/reunioes';
 
@@ -34,6 +35,7 @@ type Pendente = { mensagem: string; acao: () => Promise<unknown> };
 type Pessoa = Participante & { usuario_id: NonNullable<Participante['usuario_id']> };
 
 export default function TelaReuniao() {
+  const router = useRouter();
   const { tema } = useTema();
   const { cores } = tema;
   const { usuario } = useSessao();
@@ -165,6 +167,7 @@ export default function TelaReuniao() {
     alerta: { fundo: cores.alertaSuave, cor: cores.alerta },
     erro: { fundo: cores.erroSuave, cor: cores.erro },
   };
+  const ata = situacaoDaAta(reuniao.ata);
   const minha = minhaPresenca();
   const tomMinha = tons[minha.tom];
   const mostrarConvite = !dono && !cancelada && !terminou && eu && !eu.presenca && eu.convite !== 'ACEITO';
@@ -304,6 +307,28 @@ export default function TelaReuniao() {
             />
           ) : null}
         </View>
+      ) : null}
+
+      {terminou && !cancelada ? (
+        <Pressable
+          onPress={() => router.push({ pathname: '/reunioes/registros', params: { id: reuniao._id } })}
+          accessibilityRole="button"
+          accessibilityLabel={`Ata, ${ata.texto}`}
+          style={({ pressed }) => [
+            styles.cartaoAcao,
+            styles.linhaAcao,
+            { backgroundColor: cores.superficie, borderColor: cores.bordaSuave, opacity: pressed ? 0.85 : 1 },
+          ]}
+        >
+          <View style={[styles.iconeAcao, { backgroundColor: cores.primariaSuave }]}>
+            <Ionicons name="document-text-outline" size={20} color={cores.primaria} />
+          </View>
+          <View style={styles.textos}>
+            <Text style={[styles.legenda, { color: cores.textoSuave }]}>Ata</Text>
+            <Text style={[styles.destaque, { color: cores.texto }]}>{ata.texto}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={cores.textoSutil} />
+        </Pressable>
       ) : null}
 
       <Abas<Aba>

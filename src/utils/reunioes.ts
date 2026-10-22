@@ -1,5 +1,5 @@
 import type { TomEtiqueta } from '@/components/Etiqueta';
-import type { Participante, Reuniao } from '@/services/api';
+import type { Ata, Participante, Reuniao } from '@/services/api';
 
 export const MESES = [
   'janeiro',
@@ -152,6 +152,15 @@ export function entradaAberta(reuniao: Reuniao, agora: number) {
     agora >= new Date(reuniao.inicio).getTime() &&
     agora <= new Date(reuniao.fim).getTime()
   );
+}
+
+export function situacaoDaAta(ata: Ata | undefined): { texto: string; tom: TomEtiqueta } {
+  if (!ata) return { texto: 'Não registrada', tom: 'neutro' };
+  if (ata.situacao === 'RASCUNHO') return { texto: 'Rascunho', tom: 'alerta' };
+  if (ata.situacao === 'EM_APROVACAO') {
+    return { texto: `Em aprovação · ${ata.aprovacoes.length} de ${ata.aprovadores.length}`, tom: 'primaria' };
+  }
+  return { texto: 'Aprovada', tom: 'sucesso' };
 }
 
 export function plural(quantidade: number, singular: string, varios: string) {
