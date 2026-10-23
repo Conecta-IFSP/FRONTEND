@@ -25,6 +25,7 @@
       "package": "br.com.conectamais.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
+        "monochromeImage": "./assets/images/adaptive-icon-monocromatico.png",
         "backgroundColor": "#FFFFFF"
       }
     },
