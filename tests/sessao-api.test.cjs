@@ -11,7 +11,7 @@ function preparar(status, caminho = '/usuarios/me') {
   const resposta = new Promise((resolve) => { responder = resolve; });
   const exports = {};
   const contexto = {
-    exports, process: { env: { EXPO_PUBLIC_API_URL: 'http://localhost:3000' } },
+    exports, process: { env: { EXPO_PUBLIC_API_URL: 'http://localhost:3000', EXPO_PUBLIC_API_ACCESS_TOKEN: 'chave-de-teste' } },
     window: { localStorage: {
       getItem: () => token, setItem: (_, valor) => { token = valor; }, removeItem: () => { token = null; },
     } },

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { Link } from "expo-router";
 import { useForm } from "react-hook-form";
 import * as AuthSession from "expo-auth-session";
@@ -38,6 +38,7 @@ type DadosLogin = { email: string; senha: string };
 export default function TelaLogin() {
   const sessao = useSessao();
   const { tema, definirPreferencia } = useTema();
+  const { height: alturaTela } = useWindowDimensions();
   const { control, handleSubmit, setFocus, formState } = useForm<DadosLogin>({
     defaultValues: { email: "", senha: "" },
   });
@@ -119,7 +120,7 @@ export default function TelaLogin() {
 
   return (
     <FundoGradiente
-      marca={<Logo largura={150} />}
+      marca={<Logo largura={alturaTela < 700 ? 100 : alturaTela < 800 ? 125 : 150} />}
       rodape={
         <>
           <Botao

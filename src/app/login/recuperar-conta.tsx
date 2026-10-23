@@ -10,6 +10,7 @@ import { TelaComCabecalho } from '@/components/TelaComCabecalho';
 import { ESPACO, FONTES, TIPOGRAFIA } from '@/constants/theme';
 import { useTema } from '@/contexts/TemaContext';
 import { api } from '@/services/api';
+import { autenticarComDispositivo } from '@/services/autenticacao-local';
 import { normalizarEmail, validarConfirmacaoSenha, validarEmail, validarSenha } from '@/utils/validacao';
 
 type Etapa = 'email' | 'codigo' | 'senha' | 'concluido';
@@ -104,6 +105,8 @@ export default function TelaRecuperarConta() {
 
   const redefinir = enviarFormularioSenha(async ({ senha }) => {
     definirAviso(null);
+    const autenticado = await autenticarComDispositivo().catch(() => false);
+    if (!autenticado) return;
     const resultado = await api('/auth/redefinir-senha', 'POST', { token, nova_senha: senha });
     if (!resultado.ok) {
       definirAviso({ tom: 'erro', titulo: 'Não foi possível redefinir', mensagem: resultado.erro });

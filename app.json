@@ -58,6 +58,14 @@
         {
           "faceIDPermission": "O Conecta+ usa o Face ID para proteger as configurações da sua conta."
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
       ]
     ],
     "experiments": {

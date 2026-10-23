@@ -103,6 +103,7 @@ export async function signInWithGoogleNative() {
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
   }
 
+  await GoogleSignin.signOut().catch(() => {});
   const response = await GoogleSignin.signIn();
   if (!isSuccessResponse(response)) {
     return { cancelled: true as const };
