@@ -57,14 +57,14 @@ export { discovery };
 
 export async function exchangeCodeForToken(code: string, redirectUri: string) {
   if (!redirectUri || !redirectUri.trim()) {
-    throw new Error("redirectUri should not be empty");
+    throw new Error("Endereço de retorno do Google não informado.");
   }
   const res = await api<{ access_token: string; usuario: any }>(
     "/auth/google",
     "POST",
-    // O DTO do backend usa camelCase. O redirect_uri precisa ser exatamente
-    // o mesmo valor usado na autorização inicial.
-    { code, redirectUri, plataforma: Platform.OS },
+    // O redirect_uri precisa ser exatamente o mesmo valor usado na
+    // autorização inicial.
+    { code, redirect_uri: redirectUri, plataforma: Platform.OS },
   );
   return res;
 }
@@ -119,7 +119,7 @@ export async function signInWithGoogleNative() {
 
 export async function loginComIdTokenGoogle(idToken: string) {
   return api<{ access_token: string; usuario: any }>("/auth/google", "POST", {
-    idToken,
+    id_token: idToken,
     plataforma: Platform.OS,
   });
 }

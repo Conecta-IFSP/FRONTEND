@@ -38,16 +38,10 @@ No Expo Go, o aplicativo obtém o host atual do Expo e troca automaticamente o
 `localhost` pelo endereço do computador. O celular e o computador precisam estar
 na mesma rede, e o backend deve ouvir em `0.0.0.0:3000`.
 
-## Recuperação de senha no Expo Go
+## Recuperação de senha
 
-Ao solicitar a recuperação, o frontend usa `Linking.createURL()` para enviar ao
-backend o endereço atual do projeto no Expo Go. O e-mail aponta para uma página
-HTTP local do backend, que abre a tela de redefinição no Expo Go. Assim, não é
-necessário atualizar `APP_RESET_URL` quando o IP ou a porta mudar.
-
-Os servidores do Expo e do backend precisam continuar abertos enquanto o usuário
-acessa o link. `APP_RESET_URL` permanece apenas como fallback para chamadas
-feitas fora do aplicativo.
+O backend envia por e-mail um código de 7 caracteres. O usuário digita o código
+na tela de recuperação de conta e define a nova senha no próprio aplicativo.
 
 ## Backend
 
