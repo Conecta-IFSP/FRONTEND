@@ -19,7 +19,15 @@ import { ESPACO, FONTES, RAIO, TIPOGRAFIA } from '@/constants/theme';
 import { useSessao } from '@/contexts/SessaoContext';
 import { useTema } from '@/contexts/TemaContext';
 import { api, type Comissao, type PessoaComissao, type Reuniao } from '@/services/api';
-import { comHora, formatarData, inicioDoDia, jaPassou, lerChaveDia, plural } from '@/utils/reunioes';
+import {
+  comHora,
+  comissoesQueComando,
+  formatarData,
+  inicioDoDia,
+  jaPassou,
+  lerChaveDia,
+  plural,
+} from '@/utils/reunioes';
 import { sugerirHorarios } from '@/utils/sugestoes-horario';
 import {
   mascararHora,
@@ -70,13 +78,7 @@ export default function TelaNovaReuniao() {
         definirErro(resultado.erro);
         return;
       }
-      const minhas = resultado.dados.filter(
-        (comissao) =>
-          comissao.ativo &&
-          comissao.membros.some(
-            (membro) => membro.usuario_id?._id === meuId && membro.papel === 'RESPONSAVEL',
-          ),
-      );
+      const minhas = comissoesQueComando(resultado.dados, meuId);
       definirComissoes(minhas);
       definirComissaoId(
         minhas.find((comissao) => comissao._id === comissaoInicial)?._id ?? minhas[0]?._id ?? '',

@@ -1,5 +1,5 @@
 import type { TomEtiqueta } from '@/components/Etiqueta';
-import type { Ata, Participante, Reuniao } from '@/services/api';
+import type { Ata, Comissao, Participante, Reuniao } from '@/services/api';
 
 export const MESES = [
   'janeiro',
@@ -121,6 +121,14 @@ export function duracao(reuniao: Pick<Reuniao, 'inicio' | 'fim'>) {
 
 export function meuParticipante(reuniao: Reuniao, usuarioId: string | undefined): Participante | undefined {
   return reuniao.participantes.find((participante) => participante.usuario_id?._id === usuarioId);
+}
+
+export function comissoesQueComando(comissoes: Comissao[], usuarioId: string | undefined) {
+  return comissoes.filter(
+    (comissao) =>
+      comissao.ativo &&
+      comissao.membros.some((membro) => membro.usuario_id?._id === usuarioId && membro.papel === 'RESPONSAVEL'),
+  );
 }
 
 export type SituacaoReuniao = {

@@ -14,9 +14,10 @@ import { FaixaAviso } from '@/components/FaixaAviso';
 import { ESPACO, FONTES, RAIO } from '@/constants/theme';
 import { useSessao } from '@/contexts/SessaoContext';
 import { useTema } from '@/contexts/TemaContext';
-import { api, type Reuniao } from '@/services/api';
+import { api, type Comissao, type Reuniao } from '@/services/api';
 import {
   chaveDia,
+  comissoesQueComando,
   duracao,
   formatarDataCurta,
   formatarHora,
@@ -45,15 +46,20 @@ export default function TelaAgenda() {
   const [carregando, definirCarregando] = useState(true);
   const [atualizando, definirAtualizando] = useState(false);
   const [respondendo, definirRespondendo] = useState<string | null>(null);
+  const [podeAgendar, definirPodeAgendar] = useState(false);
   const [erro, definirErro] = useState('');
   const hoje = inicioDoDia(new Date(agora));
 
   const carregar = useCallback(
     async (continuar: () => boolean = () => true) => {
-      const lista = await api<Reuniao[]>('/reunioes');
+      const [lista, comissoes] = await Promise.all([
+        api<Reuniao[]>('/reunioes'),
+        api<Comissao[]>('/comissoes'),
+      ]);
       if (!continuar()) return;
       definirCarregando(false);
       definirAgora(Date.now());
+      if (comissoes.ok) definirPodeAgendar(comissoesQueComando(comissoes.dados, meuId).length > 0);
       if (!lista.ok) {
         definirErro(lista.erro);
         return;
@@ -61,7 +67,7 @@ export default function TelaAgenda() {
       definirErro('');
       definirReunioes(lista.dados);
     },
-    [],
+    [meuId],
   );
 
   useFocusEffect(
@@ -281,11 +287,13 @@ export default function TelaAgenda() {
         </View>
       ) : null}
 
-      <BotaoFlutuante
-        icone="add"
-        rotulo="Nova reunião"
-        aoTocar={() => router.push({ pathname: '/reunioes/nova', params: { data: chaveDia(selecionado) } })}
-      />
+      {podeAgendar ? (
+        <BotaoFlutuante
+          icone="add"
+          rotulo="Nova reunião"
+          aoTocar={() => router.push({ pathname: '/reunioes/nova', params: { data: chaveDia(selecionado) } })}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }
