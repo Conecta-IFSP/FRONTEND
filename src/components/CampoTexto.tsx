@@ -1,5 +1,14 @@
 import { forwardRef, useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  type TextInputInstance,
+  type TextInputProps,
+} from 'react-native';
 import { Ionicons, type IoniconsIconName } from '@react-native-vector-icons/ionicons';
 import { useController, type Control, type FieldPath, type FieldValues } from 'react-hook-form';
 
@@ -23,7 +32,7 @@ const ALTURA = 56;
 const ALTURA_COMPACTA = 48;
 const ALTURA_MULTILINHA = 120;
 
-export const CampoTexto = forwardRef<TextInput, CampoTextoProps>(function CampoTexto(
+export const CampoTexto = forwardRef<TextInputInstance, CampoTextoProps>(function CampoTexto(
   {
     rotulo,
     icone,
@@ -259,7 +268,7 @@ type CampoCodigoProps = {
 
 export function CampoCodigo({ valor, aoMudar, aoEnviar, desabilitado = false, focoAutomatico = true }: CampoCodigoProps) {
   const { cores } = useTema().tema;
-  const [entrada, definirEntrada] = useState<TextInput | null>(null);
+  const [entrada, definirEntrada] = useState<TextInputInstance | null>(null);
   const caracteres = valor.split('');
 
   return (

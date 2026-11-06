@@ -12,7 +12,7 @@ const ABAS = [
   { nome: 'organizacoes', rotulo: 'Organizações', icone: 'business-outline', iconeAtivo: 'business' },
 ] as const;
 
-export function BarraAbas({ state, navigation }: BottomTabBarProps) {
+export function BarraAbas({ state, emitter, navigateToTab }: BottomTabBarProps) {
   const { cores } = useTema().tema;
   const margens = useSafeAreaInsets();
   const atual = state.routes[state.index]?.name;
@@ -42,8 +42,8 @@ export function BarraAbas({ state, navigation }: BottomTabBarProps) {
             accessibilityState={{ selected: selecionada }}
             onPress={() => {
               if (!rota) return;
-              const evento = navigation.emit({ type: 'tabPress', target: rota.key, canPreventDefault: true });
-              if (atual !== aba.nome && !evento.defaultPrevented) navigation.navigate(rota.name);
+              const evento = emitter.emit({ type: 'tabPress', target: rota.key, canPreventDefault: true });
+              if (atual !== aba.nome && !evento.defaultPrevented) navigateToTab(rota.key);
             }}
             style={styles.aba}
           >
