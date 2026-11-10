@@ -207,6 +207,8 @@ type CampoSelecaoProps = {
   aoTocar: () => void;
   icone?: IoniconsIconName;
   detalhe?: string;
+  placeholder?: string;
+  erro?: string | null;
   desabilitado?: boolean;
   compacto?: boolean;
 };
@@ -217,10 +219,14 @@ export function CampoSelecao({
   aoTocar,
   icone,
   detalhe,
+  placeholder,
+  erro = null,
   desabilitado = false,
   compacto = false,
 }: CampoSelecaoProps) {
   const { cores } = useTema().tema;
+  const vazio = valor.length === 0;
+  const texto = vazio ? (placeholder ?? '') : valor;
 
   return (
     <View style={styles.container}>
@@ -229,22 +235,25 @@ export function CampoSelecao({
         onPress={aoTocar}
         disabled={desabilitado}
         accessibilityRole="button"
-        accessibilityLabel={`${rotulo}: ${valor}${detalhe ? `, ${detalhe}` : ''}`}
+        accessibilityLabel={`${rotulo}: ${texto}${detalhe ? `, ${detalhe}` : ''}`}
         style={({ pressed }) => [
           styles.caixa,
           detalhe ? styles.caixaSelecaoDupla : styles.caixaLinha,
           compacto ? (detalhe ? styles.caixaCompactaMultilinha : styles.caixaCompacta) : null,
           {
             backgroundColor: cores.campoFundo,
-            borderColor: cores.campoBorda,
+            borderColor: erro ? cores.erro : cores.campoBorda,
             opacity: desabilitado ? 0.55 : pressed ? 0.85 : 1,
           },
         ]}
       >
         {icone ? <Ionicons name={icone} size={20} color={cores.textoSutil} /> : null}
         <View style={[styles.areaEntrada, icone ? styles.entradaComIcone : null]}>
-          <Text numberOfLines={1} style={[styles.textoSelecao, { color: cores.texto }]}>
-            {valor}
+          <Text
+            numberOfLines={1}
+            style={[styles.textoSelecao, { color: vazio ? cores.placeholder : cores.texto }]}
+          >
+            {texto}
           </Text>
           {detalhe ? (
             <Text numberOfLines={1} style={[styles.dica, { color: cores.textoSuave }]}>
@@ -254,6 +263,15 @@ export function CampoSelecao({
         </View>
         <Ionicons name="chevron-down" size={18} color={cores.textoSutil} />
       </Pressable>
+
+      {erro ? (
+        <View style={styles.rodape}>
+          <View style={styles.erro}>
+            <Ionicons name="alert-circle" size={14} color={cores.erro} />
+            <Text style={[styles.textoErro, { color: cores.erro }]}>{erro}</Text>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }

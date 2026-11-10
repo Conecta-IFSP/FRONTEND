@@ -21,6 +21,7 @@ import {
   duracao,
   formatarDataCurta,
   formatarHora,
+  horarioCurto,
   inicioDoDia,
   maiuscula,
   MESES,
@@ -205,16 +206,18 @@ export default function TelaAgenda() {
                         <Pressable
                           onPress={() => router.push({ pathname: '/reunioes/[id]', params: { id: reuniao._id } })}
                           accessibilityRole="button"
-                          accessibilityLabel={`${reuniao.titulo}, ${formatarHora(reuniao.inicio)}, ${
+                          accessibilityLabel={`${reuniao.titulo}, ${horarioCurto(reuniao)}, ${
                             reuniao.comissao_id?.nome ?? ''
                           }${mostrarEtiqueta ? `, ${situacao.texto}` : ''}`}
                           style={({ pressed }) => [styles.reuniao, { opacity: pressed ? 0.7 : 1 }]}
                         >
                           <View style={styles.horario}>
                             <Text style={[styles.hora, { color: apagada ? cores.textoSutil : cores.texto }]}>
-                              {formatarHora(reuniao.inicio)}
+                              {reuniao.dia_inteiro ? 'Dia' : formatarHora(reuniao.inicio)}
                             </Text>
-                            <Text style={[styles.duracao, { color: cores.textoSutil }]}>{duracao(reuniao)}</Text>
+                            <Text style={[styles.duracao, { color: cores.textoSutil }]}>
+                              {reuniao.dia_inteiro ? 'inteiro' : duracao(reuniao)}
+                            </Text>
                           </View>
                           <View style={[styles.barra, { backgroundColor: barra }]} />
                           <View style={styles.corpo}>

@@ -1,10 +1,15 @@
 import { Platform } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
 
-export async function autenticarComDispositivo() {
-  if (Platform.OS === 'web') return true;
+// Falso na web e em aparelhos sem biometria, PIN ou senha de bloqueio.
+export async function dispositivoProtegido() {
+  if (Platform.OS === 'web') return false;
   const nivel = await LocalAuthentication.getEnrolledLevelAsync().catch(() => LocalAuthentication.SecurityLevel.NONE);
-  if (nivel === LocalAuthentication.SecurityLevel.NONE) return true;
+  return nivel !== LocalAuthentication.SecurityLevel.NONE;
+}
+
+export async function autenticarComDispositivo() {
+  if (!(await dispositivoProtegido())) return true;
 
   const resultado = await LocalAuthentication.authenticateAsync({
     promptMessage: 'Confirme sua identidade',

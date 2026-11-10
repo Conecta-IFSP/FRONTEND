@@ -52,6 +52,10 @@ export function inicioDoDia(data: Date) {
   return new Date(data.getFullYear(), data.getMonth(), data.getDate());
 }
 
+export function fimDoDia(data: Date) {
+  return new Date(data.getFullYear(), data.getMonth(), data.getDate(), 23, 59, 59, 999);
+}
+
 export function somarDias(data: Date, dias: number) {
   return new Date(data.getFullYear(), data.getMonth(), data.getDate() + dias);
 }
@@ -107,7 +111,12 @@ export function seloMes(valor: string | Date) {
   return MESES_CURTOS[new Date(valor).getMonth()].replace('.', '').toUpperCase();
 }
 
-export function intervalo(reuniao: Pick<Reuniao, 'inicio' | 'fim'>) {
+export function horarioCurto(reuniao: Pick<Reuniao, 'inicio' | 'dia_inteiro'>) {
+  return reuniao.dia_inteiro ? 'Dia inteiro' : formatarHora(reuniao.inicio);
+}
+
+export function intervalo(reuniao: Pick<Reuniao, 'inicio' | 'fim' | 'dia_inteiro'>) {
+  if (reuniao.dia_inteiro) return 'Dia inteiro';
   return `${formatarHora(reuniao.inicio)} – ${formatarHora(reuniao.fim)}`;
 }
 
@@ -164,11 +173,30 @@ export function entradaAberta(reuniao: Reuniao, agora: number) {
 
 export function situacaoDaAta(ata: Ata | undefined): { texto: string; tom: TomEtiqueta } {
   if (!ata) return { texto: 'Não registrada', tom: 'neutro' };
-  if (ata.situacao === 'RASCUNHO') return { texto: 'Rascunho', tom: 'alerta' };
-  if (ata.situacao === 'EM_APROVACAO') {
-    return { texto: `Em aprovação · ${ata.aprovacoes.length} de ${ata.aprovadores.length}`, tom: 'primaria' };
+  switch (ata.situacao) {
+    case 'RASCUNHO':
+      return { texto: 'Rascunho', tom: 'alerta' };
+    case 'EM_APROVACAO': {
+      const aprovacoes = ata.avaliacoes.filter((avaliacao) => avaliacao.decisao === 'APROVADA').length;
+      return { texto: `Em aprovação · ${aprovacoes} de ${ata.aprovadores.length}`, tom: 'primaria' };
+    }
+    case 'REPROVADA':
+      return { texto: 'Reprovada', tom: 'erro' };
+    case 'CANCELADA':
+      return { texto: 'Cancelada', tom: 'neutro' };
+    default:
+      return { texto: 'Aprovada', tom: 'sucesso' };
   }
-  return { texto: 'Aprovada', tom: 'sucesso' };
+}
+
+export function numeroDaAta(ata: Ata | undefined) {
+  return ata?.numero && ata.ano ? `Ata nº ${ata.numero}/${ata.ano}` : 'Ata';
+}
+
+export function formatarDataHora(valor: string | Date) {
+  const data = new Date(valor);
+  const dia = `${String(data.getDate()).padStart(2, '0')}/${String(data.getMonth() + 1).padStart(2, '0')}`;
+  return `${dia}/${data.getFullYear()} às ${formatarHora(data)}`;
 }
 
 export function plural(quantidade: number, singular: string, varios: string) {

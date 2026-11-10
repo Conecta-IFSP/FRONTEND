@@ -12,10 +12,19 @@ import { EstadoVazio } from '@/components/EstadoVazio';
 import { Etiqueta } from '@/components/Etiqueta';
 import { FaixaAviso } from '@/components/FaixaAviso';
 import { FolhaInferior } from '@/components/FolhaInferior';
+import { ListaAnexos, type ItemAnexo } from '@/components/ListaAnexos';
 import { TelaComCabecalho } from '@/components/TelaComCabecalho';
 import { ESPACO, FONTES, RAIO, TIPOGRAFIA } from '@/constants/theme';
 import { useSessao } from '@/contexts/SessaoContext';
 import { useTema } from '@/contexts/TemaContext';
+import {
+  abrirAnexo,
+  enviarAnexo,
+  escolherArquivos,
+  MAXIMO_ANEXOS,
+  removerAnexo,
+  validarArquivos,
+} from '@/services/anexos';
 import { api, type Participante, type Reuniao, type Resultado } from '@/services/api';
 import {
   entradaAberta,
@@ -23,6 +32,7 @@ import {
   formatarHora,
   intervalo,
   meuParticipante,
+  numeroDaAta,
   plural,
   situacaoDaAta,
   situacaoDaReuniao,
@@ -49,6 +59,7 @@ export default function TelaReuniao() {
   const [sucesso, definirSucesso] = useState('');
   const [opcoes, definirOpcoes] = useState(false);
   const [confirmacao, definirConfirmacao] = useState<Pendente | null>(null);
+  const [abrindoAnexo, definirAbrindoAnexo] = useState<string | null>(null);
 
   const buscar = useCallback(async () => {
     const resultado = await api<Reuniao>(`/reunioes/${id}`);
@@ -115,6 +126,56 @@ export default function TelaReuniao() {
     pessoa.usuario_id._id === usuario?._id ? `${pessoa.usuario_id.nome} (você)` : pessoa.usuario_id.nome;
 
   const caminho = `/reunioes/${reuniao._id}`;
+  const anexos = reuniao.anexos ?? [];
+  // Só quem agendou mexe nos anexos, e só até a reunião terminar ou ser cancelada.
+  const anexosEditaveis = dono && !cancelada && !terminou;
+  const reuniaoId = reuniao._id;
+
+  async function adicionarAnexos() {
+    if (salvando) return;
+    const escolhidos = await escolherArquivos();
+    if (escolhidos.length === 0) return;
+    const problema = validarArquivos(escolhidos, anexos.length);
+    definirSucesso('');
+    if (problema) {
+      definirErro(problema);
+      return;
+    }
+    definirErro('');
+    definirSalvando('anexo');
+    let enviados = 0;
+    for (const arquivo of escolhidos) {
+      const resultado = await enviarAnexo(reuniaoId, arquivo);
+      if (!resultado.ok) {
+        definirErro(`${arquivo.nome}: ${resultado.erro}`);
+        break;
+      }
+      definirReuniao(resultado.dados);
+      enviados += 1;
+    }
+    definirSalvando(null);
+    if (enviados > 0) definirSucesso(plural(enviados, 'anexo adicionado.', 'anexos adicionados.'));
+  }
+
+  function confirmarRemocao(item: ItemAnexo) {
+    definirConfirmacao({
+      mensagem: `Remover o anexo ${item.nome}?`,
+      acao: async () => {
+        await executar('anexo', () => removerAnexo(reuniaoId, item.chave), 'Anexo removido.');
+        definirConfirmacao(null);
+      },
+    });
+  }
+
+  async function abrir(item: ItemAnexo) {
+    const anexo = anexos.find((atual) => atual._id === item.chave);
+    if (!anexo) return;
+    definirErro('');
+    definirAbrindoAnexo(item.chave);
+    const problema = await abrirAnexo(reuniaoId, anexo);
+    definirAbrindoAnexo(null);
+    if (problema) definirErro(problema);
+  }
 
   function marcarPresenca(pessoa: Pessoa, situacao: 'CONFIRMADA' | 'RECUSADA') {
     void executar(`presenca-${pessoa.usuario_id._id}`, () =>
@@ -171,6 +232,7 @@ export default function TelaReuniao() {
   const minha = minhaPresenca();
   const tomMinha = tons[minha.tom];
   const mostrarConvite = !dono && !cancelada && !terminou && eu && !eu.presenca && eu.convite !== 'ACEITO';
+  const horarioAlterado = Boolean(reuniao.horario_alterado_em) && eu?.convite === 'PENDENTE';
   const mostrarPresenca = entradaAberta(reuniao, agora) && eu && eu.convite !== 'RECUSADO';
   const mostrarRestantes = restantes.length > 0 && (dono || !comecou);
 
@@ -212,10 +274,12 @@ export default function TelaReuniao() {
             {formatarData(reuniao.inicio)} · {intervalo(reuniao)}
           </Text>
         </View>
-        <View style={styles.linha}>
-          <Ionicons name="location-outline" size={18} color={cores.textoSutil} />
-          <Text style={[styles.info, { color: cores.textoSuave }]}>{reuniao.local}</Text>
-        </View>
+        {reuniao.local ? (
+          <View style={styles.linha}>
+            <Ionicons name="location-outline" size={18} color={cores.textoSutil} />
+            <Text style={[styles.info, { color: cores.textoSuave }]}>{reuniao.local}</Text>
+          </View>
+        ) : null}
       </View>
 
       {erro ? <FaixaAviso aviso={{ tom: 'erro', mensagem: erro }} /> : null}
@@ -225,12 +289,22 @@ export default function TelaReuniao() {
         <View style={[styles.cartaoAcao, { backgroundColor: cores.superficie, borderColor: cores.bordaSuave }]}>
           <View style={styles.linhaAcao}>
             <View style={[styles.iconeAcao, { backgroundColor: cores.alertaSuave }]}>
-              <Ionicons name="mail-outline" size={20} color={cores.alerta} />
+              <Ionicons
+                name={horarioAlterado ? 'time-outline' : 'mail-outline'}
+                size={20}
+                color={cores.alerta}
+              />
             </View>
             <View style={styles.textos}>
-              <Text style={[styles.legenda, { color: cores.textoSuave }]}>Convite</Text>
+              <Text style={[styles.legenda, { color: cores.textoSuave }]}>
+                {horarioAlterado ? 'Horário alterado' : 'Convite'}
+              </Text>
               <Text style={[styles.destaque, { color: cores.texto }]}>
-                {eu.convite === 'PENDENTE' ? 'Aguardando sua resposta' : 'Você recusou o convite'}
+                {eu.convite === 'PENDENTE'
+                  ? horarioAlterado
+                    ? 'Confirme se vai participar no novo horário'
+                    : 'Aguardando sua resposta'
+                  : 'Você recusou o convite'}
               </Text>
             </View>
           </View>
@@ -313,7 +387,7 @@ export default function TelaReuniao() {
         <Pressable
           onPress={() => router.push({ pathname: '/reunioes/registros', params: { id: reuniao._id } })}
           accessibilityRole="button"
-          accessibilityLabel={`Ata, ${ata.texto}`}
+          accessibilityLabel={`${numeroDaAta(reuniao.ata)}, ${ata.texto}`}
           style={({ pressed }) => [
             styles.cartaoAcao,
             styles.linhaAcao,
@@ -324,7 +398,7 @@ export default function TelaReuniao() {
             <Ionicons name="document-text-outline" size={20} color={cores.primaria} />
           </View>
           <View style={styles.textos}>
-            <Text style={[styles.legenda, { color: cores.textoSuave }]}>Ata</Text>
+            <Text style={[styles.legenda, { color: cores.textoSuave }]}>{numeroDaAta(reuniao.ata)}</Text>
             <Text style={[styles.destaque, { color: cores.texto }]}>{ata.texto}</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={cores.textoSutil} />
@@ -488,18 +562,49 @@ export default function TelaReuniao() {
       ) : null}
 
       {aba === 'pauta' ? (
-        !reuniao.pauta?.trim() ? (
-          <EstadoVazio icone="list-outline" mensagem="Sem pauta." />
-        ) : (
-          <View style={[styles.lista, styles.pauta, { backgroundColor: cores.superficie, borderColor: cores.bordaSuave }]}>
-            <Text style={[styles.textoPauta, { color: cores.texto }]} selectable>
-              {reuniao.pauta.trim()}
-            </Text>
-          </View>
-        )
+        <>
+          {reuniao.pauta?.trim() ? (
+            <View style={[styles.lista, styles.pauta, { backgroundColor: cores.superficie, borderColor: cores.bordaSuave }]}>
+              <Text style={[styles.textoPauta, { color: cores.texto }]} selectable>
+                {reuniao.pauta.trim()}
+              </Text>
+            </View>
+          ) : anexos.length === 0 && !anexosEditaveis ? (
+            <EstadoVazio icone="list-outline" mensagem="Sem pauta." />
+          ) : null}
+          <ListaAnexos
+            titulo="Anexos"
+            itens={anexos.map((anexo) => ({
+              chave: anexo._id,
+              nome: anexo.nome,
+              tipo: anexo.tipo,
+              tamanho: anexo.tamanho,
+            }))}
+            limite={anexosEditaveis ? MAXIMO_ANEXOS : undefined}
+            abrindo={abrindoAnexo}
+            desabilitado={salvando !== null}
+            aoAbrir={(item) => void abrir(item)}
+            aoAdicionar={anexosEditaveis ? () => void adicionarAnexos() : undefined}
+            aoRemover={anexosEditaveis ? confirmarRemocao : undefined}
+          />
+        </>
       ) : null}
 
       <FolhaInferior visivel={opcoes} titulo="Opções" aoFechar={() => definirOpcoes(false)}>
+        <Pressable
+          onPress={() => {
+            definirOpcoes(false);
+            router.push({ pathname: '/reunioes/editar/[id]', params: { id: reuniao._id } });
+          }}
+          accessibilityRole="button"
+          style={({ pressed }) => [
+            styles.opcao,
+            { borderTopColor: cores.bordaSuave, opacity: pressed ? 0.7 : 1 },
+          ]}
+        >
+          <Ionicons name="create-outline" size={22} color={cores.primaria} />
+          <Text style={[styles.textoOpcao, { color: cores.primaria }]}>Editar reunião</Text>
+        </Pressable>
         <Pressable
           onPress={() => {
             definirOpcoes(false);

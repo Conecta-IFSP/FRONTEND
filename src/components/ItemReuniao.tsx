@@ -4,7 +4,7 @@ import { Etiqueta } from '@/components/Etiqueta';
 import { ESPACO, FONTES, RAIO } from '@/constants/theme';
 import { useTema } from '@/contexts/TemaContext';
 import type { Reuniao } from '@/services/api';
-import { formatarHora, intervalo, seloDia, seloMes, situacaoDaReuniao } from '@/utils/reunioes';
+import { horarioCurto, intervalo, seloDia, seloMes, situacaoDaReuniao } from '@/utils/reunioes';
 
 type ItemReuniaoProps = {
   reuniao: Reuniao;
@@ -28,7 +28,7 @@ export function ItemReuniao({
   const hoje = new Date(agora);
   const detalhe =
     selo === 'semana'
-      ? `${formatarHora(reuniao.inicio)} · ${reuniao.comissao_id?.nome ?? 'Comissão'}`
+      ? `${horarioCurto(reuniao)} · ${reuniao.comissao_id?.nome ?? 'Comissão'}`
       : intervalo(reuniao);
   const mostrarEtiqueta = situacao.texto !== 'Agendada' && situacao.texto !== 'Realizada';
 
