@@ -64,6 +64,7 @@ function Navegacao() {
         <Stack.Protected guard={Boolean(usuario)}>
           <Stack.Screen name="(abas)" />
           <Stack.Screen name="perfil" />
+          <Stack.Screen name="sobre" />
           <Stack.Screen name="login/alterar-senha" />
           <Stack.Screen name="login/trocar-email" />
         </Stack.Protected>

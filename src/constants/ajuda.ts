@@ -13,11 +13,16 @@ import type { IoniconsIconName } from '@react-native-vector-icons/ionicons';
  *   'todos' vale para qualquer pessoa.
  * - `resposta`: um texto, ou uma lista de passos curtos (vira lista numerada).
  *
+ * PADRÃO DE ESCRITA
+ * - "Como fazer": lista de passos, no máximo 4, uma ação curta por passo.
+ * - "O que é" / "O que acontece": texto com no máximo 2 frases curtas.
+ * - Cerca de 5 linhas na tela, no máximo; se passar, divida em duas perguntas.
+ * - No máximo 5 perguntas por tópico.
+ *
  * TÓPICOS FUTUROS: quando cada funcionalidade estiver disponível no app,
  * acrescente o tópico no ponto marcado no fim de TOPICOS_AJUDA:
  * - Votação: { id: 'votacao', titulo: 'Votação', icone: 'checkbox-outline', perguntas: [...] }
  * - Relatório individual: { id: 'relatorio', titulo: 'Relatório individual', icone: 'bar-chart-outline', perguntas: [...] }
- * - Reprovação da ata: acrescente as perguntas no tópico 'ata' (não crie outro tópico).
  * Descreva só o que o app realmente faz, com os nomes de botões e telas que aparecem para o usuário.
  */
 
@@ -56,11 +61,12 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
       {
         id: 'conta-entrar',
         perfil: 'todos',
-        pergunta: 'Como faço para criar uma conta e entrar no app?',
+        pergunta: 'Como crio uma conta?',
         resposta: [
-          'Na tela Entrar, toque em Criar conta e informe nome, e-mail e senha.',
-          'Digite o código enviado para o seu e-mail na tela Confirmar e-mail e toque em Continuar.',
-          'Nas próximas vezes, informe e-mail e senha e toque em Entrar, ou use Continuar com Google.',
+          'Na tela Entrar, toque em Criar conta.',
+          'Preencha nome, e-mail e senha.',
+          'Toque em Criar conta.',
+          'Digite o código enviado ao seu e-mail.',
         ],
       },
       {
@@ -69,24 +75,38 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
         pergunta: 'Esqueci minha senha. O que faço?',
         resposta: [
           'Na tela Entrar, toque em Esqueci minha senha.',
-          'Informe seu e-mail e toque em Enviar código.',
-          'Digite o código de 7 caracteres recebido por e-mail e toque em Continuar.',
-          'Crie a nova senha e toque em Salvar senha.',
+          'Informe seu e-mail.',
+          'Digite o código recebido.',
+          'Crie a nova senha.',
         ],
       },
       {
         id: 'conta-email-senha',
         perfil: 'todos',
         pergunta: 'Como altero meu nome, e-mail ou senha?',
-        resposta:
-          'Toque na sua foto no canto superior direito para abrir o Perfil. Altere o nome e toque em Salvar, ou toque em E-mail ou Senha na seção Conta. O app pode pedir a biometria ou a senha do aparelho antes de abrir essas telas. Para trocar o e-mail, um código de confirmação é enviado ao novo endereço. Se você entrou com o Google e nunca criou senha, use Esqueci minha senha na tela Entrar para definir uma.',
+        resposta: [
+          'Toque no seu avatar, no topo da tela.',
+          'Em Conta, toque em Nome, E-mail ou Senha.',
+          'Confirme a biometria, se solicitada.',
+          'Siga as instruções da tela.',
+        ],
+      },
+      {
+        id: 'conta-google-senha',
+        perfil: 'todos',
+        pergunta: 'Entrei com o Google. Posso criar uma senha?',
+        resposta: 'Sim. Na tela Entrar, toque em Esqueci minha senha e siga os passos para definir sua senha.',
       },
       {
         id: 'conta-tema-sair',
         perfil: 'todos',
         pergunta: 'Como mudo o tema ou saio da conta?',
-        resposta:
-          'No Perfil, escolha o tema em Tema: Sistema acompanha a configuração do aparelho, Claro e Escuro fixam a aparência. Para sair, toque em Sair da conta, no fim da tela.',
+        resposta: [
+          'Toque no seu avatar, no topo da tela.',
+          'Em Tema, escolha Sistema, Claro ou Escuro.',
+          'Para sair, toque em Sair da conta.',
+          'Toque em Sair para confirmar.',
+        ],
       },
     ],
   },
@@ -98,30 +118,44 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
       {
         id: 'organizacoes-participar',
         perfil: 'todos',
-        pergunta: 'Como passo a participar de uma organização?',
-        resposta:
-          'Na aba Organizações, toque no botão + e escolha Entrar com código. Informe o código fornecido pelo administrador da organização e toque em Enviar pedido; seu acesso fica aguardando a autorização dele. Se você foi convidado pelo e-mail, o convite aparece em Convites; toque em Aceitar.',
+        pergunta: 'Como entro em uma organização?',
+        resposta: [
+          'Na aba Organizações, toque em +.',
+          'Toque em Entrar com código.',
+          'Digite o código do administrador.',
+          'Toque em Enviar pedido.',
+        ],
+      },
+      {
+        id: 'organizacoes-convite',
+        perfil: 'todos',
+        pergunta: 'Recebi um convite. Como aceito?',
+        resposta: ['Abra a aba Organizações.', 'Encontre o convite em Convites.', 'Toque em Aceitar.'],
       },
       {
         id: 'organizacoes-criar',
         perfil: 'todos',
         pergunta: 'Como cadastro uma nova organização?',
-        resposta:
-          'Na aba Organizações, toque no botão + e escolha Criar organização. Preencha nome, cidade e, se quiser, uma descrição, e toque em Enviar solicitação. A organização fica aguardando autorização do sistema antes de poder ser usada.',
+        resposta: [
+          'Na aba Organizações, toque em +.',
+          'Toque em Criar organização.',
+          'Preencha nome e cidade.',
+          'Toque em Enviar solicitação.',
+        ],
       },
       {
         id: 'organizacoes-comissao',
         perfil: 'todos',
         pergunta: 'O que é uma comissão?',
         resposta:
-          'Comissão é um grupo de pessoas de uma organização que se reúne para tratar de um assunto. O administrador da organização a cria na aba Comissões, pelo botão Nova comissão, e escolhe quem será o Responsável. Para ver as suas, abra a organização na aba Organizações.',
+          'É um grupo de pessoas de uma organização que se reúne para tratar de um assunto. O administrador da organização cria a comissão e escolhe o Responsável.',
       },
       {
         id: 'organizacoes-papeis',
         perfil: 'todos',
         pergunta: 'Qual a diferença entre Responsável e Membro?',
         resposta:
-          'Cada comissão tem um único Responsável, que agenda as reuniões, confirma as presenças e escreve a ata. Os demais integrantes aparecem como Membro: recebem os convites, marcam presença e aprovam a ata. O papel de cada pessoa aparece na aba Equipe da comissão.',
+          'O Responsável agenda as reuniões, confirma as presenças e escreve a ata. O Membro responde aos convites, marca presença e aprova a ata.',
       },
     ],
   },
@@ -133,34 +167,55 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
       {
         id: 'reunioes-agendar',
         perfil: 'responsavel',
-        pergunta: 'Como agendo uma reunião e convido as pessoas?',
+        pergunta: 'Como agendo uma reunião?',
         resposta: [
-          'Abra a organização, toque na comissão e use o botão Nova reunião; ele também aparece na aba Agenda.',
-          'Informe título, data, início e término (ou marque Dia inteiro); local, pauta e anexos são opcionais.',
-          'Em Convidados, escolha as pessoas ou Toda a comissão e toque em Concluir.',
-          'Toque em Agendar reunião; os convidados passam a vê-la na Agenda.',
+          'Na comissão, toque em Nova reunião.',
+          'Preencha título, data e horário.',
+          'Em Convidados, escolha quem participa.',
+          'Toque em Agendar reunião.',
         ],
       },
       {
         id: 'reunioes-convite',
         perfil: 'todos',
-        pergunta: 'Como respondo ao convite para uma reunião?',
-        resposta:
-          'Os convites aparecem na tela Início, em Convites, e também na própria reunião. Toque em Aceitar ou Recusar. Se a data ou o horário forem alterados, o app pede que você confirme novamente.',
+        pergunta: 'Como respondo a um convite de reunião?',
+        resposta: [
+          'Na tela Início, vá até Convites.',
+          'Toque em Aceitar ou Recusar.',
+          'Se o horário mudar, responda de novo.',
+        ],
       },
       {
         id: 'reunioes-presenca',
         perfil: 'todos',
         pergunta: 'Como registro minha presença?',
-        resposta:
-          'Durante o horário da reunião, abra-a e toque em Marcar entrada; ao sair, toque em Marcar saída. Sua entrada fica como Aguardando confirmação até que o Responsável a confirme.',
+        resposta: [
+          'Abra a reunião no horário marcado.',
+          'Toque em Marcar entrada.',
+          'Ao sair, toque em Marcar saída.',
+          'Aguarde o Responsável confirmar.',
+        ],
       },
       {
         id: 'reunioes-confirmar-presenca',
         perfil: 'responsavel',
-        pergunta: 'Como confirmo as presenças e compartilho a lista?',
-        resposta:
-          'Na aba Presença da reunião, confirme ou recuse cada pessoa em Aguardando confirmação; quem não marcou entrada pode ser registrado com Marcar presente. Depois do término, toque no cartão Ata, abra a aba Presença e toque em Compartilhar para enviar a lista.',
+        pergunta: 'Como confirmo as presenças?',
+        resposta: [
+          'Na reunião, abra a aba Presença.',
+          'Em Aguardando confirmação, confirme ou recuse cada pessoa.',
+          'Se alguém não marcou entrada, toque em Marcar presente.',
+        ],
+      },
+      {
+        id: 'reunioes-lista-presenca',
+        perfil: 'todos',
+        pergunta: 'Como compartilho a lista de presença?',
+        resposta: [
+          'Após o término, abra a reunião.',
+          'Toque no cartão Ata.',
+          'Abra a aba Presença.',
+          'Toque em Compartilhar.',
+        ],
       },
     ],
   },
@@ -172,33 +227,49 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
       {
         id: 'ata-escrever',
         perfil: 'responsavel',
-        pergunta: 'Como escrevo a ata da reunião?',
-        resposta:
-          'Somente o Responsável escreve a ata, e apenas depois que a reunião termina. Abra a reunião, toque no cartão Ata, escreva o texto na aba Ata e toque em Salvar. Enquanto for Rascunho, você pode alterar e salvar quantas vezes precisar.',
-      },
-      {
-        id: 'ata-enviar',
-        perfil: 'responsavel',
-        pergunta: 'Como envio a ata para aprovação?',
+        pergunta: 'Como escrevo e envio a ata?',
         resposta: [
-          'Com o rascunho salvo, toque em Enviar.',
-          'Escolha o Prazo para responder (24 horas, 3 dias ou 7 dias) e toque em Enviar novamente.',
-          'Depois de enviada, a ata não pode mais ser alterada. Ela é aprovada por quem teve a presença confirmada; se você esteve presente, sua aprovação já é contada.',
+          'Após o término, abra o cartão Ata.',
+          'Escreva o texto e toque em Salvar.',
+          'Toque em Enviar.',
+          'Escolha o prazo e toque em Enviar.',
         ],
       },
       {
         id: 'ata-aprovar',
         perfil: 'todos',
         pergunta: 'Como aprovo uma ata?',
-        resposta:
-          'As atas que aguardam sua resposta aparecem na tela Início, em Atas. Abra a ata, leia o texto e toque em Aprovar; o app pode pedir a biometria ou a senha do aparelho. Somente quem teve a presença confirmada na reunião aprova, uma única vez.',
+        resposta: [
+          'Na tela Início, abra a ata em Atas.',
+          'Leia o texto da ata.',
+          'Toque em Aprovar.',
+          'Confirme a biometria, se solicitada.',
+        ],
+      },
+      {
+        id: 'ata-reprovar',
+        perfil: 'todos',
+        pergunta: 'Como reprovo uma ata?',
+        resposta: [
+          'Na tela Início, abra a ata em Atas.',
+          'Toque em Reprovar.',
+          'Se quiser, escreva a justificativa.',
+          'Toque em Reprovar ata.',
+        ],
       },
       {
         id: 'ata-aprovada',
         perfil: 'todos',
         pergunta: 'O que acontece quando todos aprovam?',
         resposta:
-          'Quando todos os presentes aprovam, a ata passa para Aprovada e recebe um número, como Ata nº 1/2026. A partir daí, qualquer participante pode tocar em PDF da ata para gerar e compartilhar o documento.',
+          'A ata passa para Aprovada e recebe um número, como Ata nº 1/2026. Qualquer participante pode tocar em PDF da ata para compartilhá-la.',
+      },
+      {
+        id: 'ata-reprovada',
+        perfil: 'responsavel',
+        pergunta: 'O que acontece quando uma ata é reprovada?',
+        resposta:
+          'A ata volta para você, e os demais não precisam mais responder. Toque em Corrigir em nova versão, ajuste o texto e envie de novo.',
       },
     ],
   },
