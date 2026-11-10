@@ -1,6 +1,10 @@
-import { useState, type ReactNode } from 'react';
+import { useState, type ReactNode, type Ref } from 'react';
 import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { KeyboardAwareScrollView, KeyboardStickyView } from 'react-native-keyboard-controller';
+import {
+  KeyboardAwareScrollView,
+  KeyboardStickyView,
+  type KeyboardAwareScrollViewRef,
+} from 'react-native-keyboard-controller';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
@@ -22,6 +26,8 @@ type TelaComCabecalhoProps = {
   cabecalhoSuperficie?: boolean;
   divisor?: boolean;
   rodape?: ReactNode;
+  /** Opcional: permite à tela rolar o conteúdo por código (ex.: Ajuda abrindo num tópico). */
+  refRolagem?: Ref<KeyboardAwareScrollViewRef>;
 };
 
 export function TelaComCabecalho({
@@ -38,6 +44,7 @@ export function TelaComCabecalho({
   cabecalhoSuperficie = false,
   divisor = false,
   rodape,
+  refRolagem,
 }: TelaComCabecalhoProps) {
   const router = useRouter();
   const { tema } = useTema();
@@ -102,6 +109,7 @@ export function TelaComCabecalho({
       </View>
 
       <KeyboardAwareScrollView
+        ref={refRolagem}
         style={[styles.tela, { backgroundColor: corFundo }]}
         contentContainerStyle={styles.conteudo}
         keyboardShouldPersistTaps="handled"

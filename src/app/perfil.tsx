@@ -217,6 +217,30 @@ export default function TelaPerfil() {
         </>
       ) : null}
 
+      <View>
+        <Text style={[styles.rotulo, { color: cores.texto }]}>Suporte</Text>
+        <View style={[styles.lista, { backgroundColor: cores.superficie, borderColor: cores.bordaSuave }]}>
+          <Pressable
+            onPress={() => router.push('/ajuda')}
+            accessibilityRole="button"
+            accessibilityLabel="Ajuda"
+            accessibilityHint="Abre as perguntas frequentes"
+            style={({ pressed }) => [styles.linha, { opacity: pressed ? 0.7 : 1 }]}
+          >
+            <View style={[styles.icone, { backgroundColor: cores.primariaSuave }]}>
+              <Ionicons name="help-circle-outline" size={18} color={cores.primaria} />
+            </View>
+            <View style={styles.textos}>
+              <Text style={[styles.tituloLinha, { color: cores.texto }]}>Ajuda</Text>
+              <Text style={[styles.detalhe, { color: cores.textoSuave }]} numberOfLines={1}>
+                Perguntas frequentes
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={cores.textoSutil} />
+          </Pressable>
+        </View>
+      </View>
+
       <Pressable
         onPress={() => void sessao.sair()}
         accessibilityRole="button"

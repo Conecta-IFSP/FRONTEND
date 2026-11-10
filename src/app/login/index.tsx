@@ -148,6 +148,11 @@ export default function TelaLogin() {
               </Pressable>
             </Link>
           </View>
+          <Link href={{ pathname: "/ajuda", params: { topico: "conta" } }} asChild>
+            <Pressable accessibilityRole="link" hitSlop={8} style={styles.ajuda}>
+              <Text style={[styles.textoRodape, { color: tema.cores.textoSuave }]}>Precisa de ajuda?</Text>
+            </Pressable>
+          </Link>
         </>
       }
     >
@@ -216,4 +221,5 @@ const styles = StyleSheet.create({
   linha: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "center" },
   textoRodape: { ...TIPOGRAFIA.corpoPequeno },
   linkForte: { fontFamily: FONTES.titulo, fontSize: 14, lineHeight: 20 },
+  ajuda: { alignSelf: "center", minHeight: 32, justifyContent: "center" },
 });
