@@ -11,10 +11,10 @@ export async function dispositivoProtegido() {
 export async function autenticarComDispositivo() {
   if (!(await dispositivoProtegido())) return true;
 
+  // Sem texto nosso: o aparelho mostra o próprio pedido de biometria ou PIN, no idioma dele.
+  // O título vai com um espaço porque o androidx.biometric recusa título vazio.
   const resultado = await LocalAuthentication.authenticateAsync({
-    promptMessage: 'Confirme sua identidade',
-    promptDescription: 'Use Face ID, impressão digital ou a senha do dispositivo.',
-    cancelLabel: 'Cancelar',
+    promptMessage: ' ',
     disableDeviceFallback: false,
     requireConfirmation: true,
   });

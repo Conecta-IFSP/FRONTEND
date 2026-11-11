@@ -26,6 +26,7 @@ import {
   validarArquivos,
 } from '@/services/anexos';
 import { api, type Participante, type Reuniao, type Resultado } from '@/services/api';
+import { autenticarComDispositivo } from '@/services/autenticacao-local';
 import {
   entradaAberta,
   formatarData,
@@ -183,6 +184,43 @@ export default function TelaReuniao() {
     );
   }
 
+  // Desistir depois de ter aceitado pede confirmação; recusar convite pendente, não.
+  function recusarConvite() {
+    const recusar = () =>
+      executar(
+        'recusar',
+        () => api<Reuniao>(`${caminho}/convite`, 'PATCH', { aceito: false }),
+        'Convite recusado.',
+      );
+    if (eu?.convite !== 'ACEITO') {
+      void recusar();
+      return;
+    }
+    definirConfirmacao({
+      mensagem: 'Avisar que você não vai mais participar desta reunião?',
+      acao: async () => {
+        await recusar();
+        definirConfirmacao(null);
+      },
+    });
+  }
+
+  // Entrada e saída passam pela biometria ou PIN do aparelho, como a aprovação da ata.
+  async function registrar(chave: 'entrada' | 'saida') {
+    if (salvando) return;
+    definirErro('');
+    definirSucesso('');
+    if (!(await autenticarComDispositivo())) {
+      definirErro('Não foi possível confirmar sua identidade.');
+      return;
+    }
+    await executar(
+      chave,
+      () => api<Reuniao>(`${caminho}/${chave}`, 'POST'),
+      chave === 'entrada' ? 'Entrada marcada.' : 'Saída marcada.',
+    );
+  }
+
   function detalhePresente(pessoa: Pessoa) {
     const presenca = pessoa.presenca;
     if (!presenca) return '';
@@ -231,10 +269,18 @@ export default function TelaReuniao() {
   const ata = situacaoDaAta(reuniao.ata);
   const minha = minhaPresenca();
   const tomMinha = tons[minha.tom];
-  const mostrarConvite = !dono && !cancelada && !terminou && eu && !eu.presenca && eu.convite !== 'ACEITO';
+  // O convite aceito continua na tela para quem desistir, até marcar entrada.
+  const mostrarConvite = !dono && !cancelada && !terminou && eu && !eu.presenca;
+  const jaAceitou = eu?.convite === 'ACEITO';
   const horarioAlterado = Boolean(reuniao.horario_alterado_em) && eu?.convite === 'PENDENTE';
   const mostrarPresenca = entradaAberta(reuniao, agora) && eu && eu.convite !== 'RECUSADO';
   const mostrarRestantes = restantes.length > 0 && (dono || !comecou);
+  const tomConvite = tons[jaAceitou ? 'sucesso' : 'alerta'];
+  const iconeConvite = jaAceitou
+    ? ('checkmark-circle-outline' as const)
+    : horarioAlterado
+      ? ('time-outline' as const)
+      : ('mail-outline' as const);
 
   return (
     <TelaComCabecalho
@@ -288,12 +334,8 @@ export default function TelaReuniao() {
       {mostrarConvite ? (
         <View style={[styles.cartaoAcao, { backgroundColor: cores.superficie, borderColor: cores.bordaSuave }]}>
           <View style={styles.linhaAcao}>
-            <View style={[styles.iconeAcao, { backgroundColor: cores.alertaSuave }]}>
-              <Ionicons
-                name={horarioAlterado ? 'time-outline' : 'mail-outline'}
-                size={20}
-                color={cores.alerta}
-              />
+            <View style={[styles.iconeAcao, { backgroundColor: tomConvite.fundo }]}>
+              <Ionicons name={iconeConvite} size={20} color={tomConvite.cor} />
             </View>
             <View style={styles.textos}>
               <Text style={[styles.legenda, { color: cores.textoSuave }]}>
@@ -304,43 +346,43 @@ export default function TelaReuniao() {
                   ? horarioAlterado
                     ? 'Confirme se vai participar no novo horário'
                     : 'Aguardando sua resposta'
-                  : 'Você recusou o convite'}
+                  : jaAceitou
+                    ? 'Você confirmou presença'
+                    : 'Você recusou o convite'}
               </Text>
             </View>
           </View>
           <View style={styles.botoes}>
-            {eu.convite === 'PENDENTE' ? (
+            {eu.convite !== 'RECUSADO' ? (
               <Botao
-                titulo="Recusar"
+                titulo={jaAceitou ? 'Não vou mais' : 'Recusar'}
                 variante="secundario"
                 pilula
                 compacto
                 desabilitado={salvando !== null}
                 carregando={salvando === 'recusar'}
+                aoTocar={recusarConvite}
+                style={styles.botao}
+              />
+            ) : null}
+            {jaAceitou ? null : (
+              <Botao
+                titulo={eu.convite === 'PENDENTE' ? 'Aceitar' : 'Aceitar convite'}
+                variante={eu.convite === 'PENDENTE' ? 'primario' : 'secundario'}
+                pilula
+                compacto
+                desabilitado={salvando !== null}
+                carregando={salvando === 'aceitar'}
                 aoTocar={() =>
-                  void executar('recusar', () =>
-                    api<Reuniao>(`${caminho}/convite`, 'PATCH', { aceito: false }),
+                  void executar(
+                    'aceitar',
+                    () => api<Reuniao>(`${caminho}/convite`, 'PATCH', { aceito: true }),
+                    'Convite aceito.',
                   )
                 }
                 style={styles.botao}
               />
-            ) : null}
-            <Botao
-              titulo={eu.convite === 'PENDENTE' ? 'Aceitar' : 'Aceitar convite'}
-              variante={eu.convite === 'PENDENTE' ? 'primario' : 'secundario'}
-              pilula
-              compacto
-              desabilitado={salvando !== null}
-              carregando={salvando === 'aceitar'}
-              aoTocar={() =>
-                void executar(
-                  'aceitar',
-                  () => api<Reuniao>(`${caminho}/convite`, 'PATCH', { aceito: true }),
-                  'Convite aceito.',
-                )
-              }
-              style={styles.botao}
-            />
+            )}
           </View>
         </View>
       ) : null}
@@ -363,9 +405,7 @@ export default function TelaReuniao() {
               pilula
               carregando={salvando === 'entrada'}
               desabilitado={salvando !== null}
-              aoTocar={() =>
-                void executar('entrada', () => api<Reuniao>(`${caminho}/entrada`, 'POST'), 'Entrada marcada.')
-              }
+              aoTocar={() => void registrar('entrada')}
             />
           ) : eu.presenca.situacao !== 'RECUSADA' && !eu.presenca.saida ? (
             <Botao
@@ -375,9 +415,7 @@ export default function TelaReuniao() {
               pilula
               carregando={salvando === 'saida'}
               desabilitado={salvando !== null}
-              aoTocar={() =>
-                void executar('saida', () => api<Reuniao>(`${caminho}/saida`, 'POST'), 'Saída marcada.')
-              }
+              aoTocar={() => void registrar('saida')}
             />
           ) : null}
         </View>
