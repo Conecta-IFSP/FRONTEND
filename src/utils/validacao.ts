@@ -53,7 +53,8 @@ export function validarTituloReuniao(titulo: string) {
 }
 
 export function validarLocal(local: string) {
-  if (local.trim().length < 2) return 'Informe o local da reunião.';
+  const tamanho = local.trim().length;
+  if (tamanho > 0 && tamanho < 2) return 'O local deve ter pelo menos 2 caracteres.';
   return null;
 }
 

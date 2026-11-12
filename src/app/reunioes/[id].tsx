@@ -4,6 +4,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 
 import { Abas } from '@/components/Abas';
+import { AcessoPresidente } from '@/components/AcessoPresidente';
 import { Avatar } from '@/components/Avatar';
 import { Botao } from '@/components/Botao';
 import { Carregando } from '@/components/Carregando';
@@ -12,18 +13,29 @@ import { EstadoVazio } from '@/components/EstadoVazio';
 import { Etiqueta } from '@/components/Etiqueta';
 import { FaixaAviso } from '@/components/FaixaAviso';
 import { FolhaInferior } from '@/components/FolhaInferior';
+import { ListaAnexos, type ItemAnexo } from '@/components/ListaAnexos';
 import { TelaComCabecalho } from '@/components/TelaComCabecalho';
 import { VotacoesReuniao } from '@/components/VotacoesReuniao';
 import { ESPACO, FONTES, RAIO, TIPOGRAFIA } from '@/constants/theme';
 import { useSessao } from '@/contexts/SessaoContext';
 import { useTema } from '@/contexts/TemaContext';
+import {
+  abrirAnexo,
+  enviarAnexo,
+  escolherArquivos,
+  MAXIMO_ANEXOS,
+  removerAnexo,
+  validarArquivos,
+} from '@/services/anexos';
 import { api, type Comissao, type Participante, type Reuniao, type Resultado } from '@/services/api';
+import { autenticarComDispositivo } from '@/services/autenticacao-local';
 import {
   entradaAberta,
   formatarData,
   formatarHora,
   intervalo,
   meuParticipante,
+  numeroDaAta,
   plural,
   situacaoDaAta,
   situacaoDaReuniao,
@@ -51,6 +63,7 @@ export default function TelaReuniao() {
   const [opcoes, definirOpcoes] = useState(false);
   const [confirmacao, definirConfirmacao] = useState<Pendente | null>(null);
   const [presidente, definirPresidente] = useState(false);
+  const [abrindoAnexo, definirAbrindoAnexo] = useState<string | null>(null);
 
   const buscar = useCallback(async () => {
     const resultado = await api<Reuniao>(`/reunioes/${id}`);
@@ -130,10 +143,97 @@ export default function TelaReuniao() {
     pessoa.usuario_id._id === usuario?._id ? `${pessoa.usuario_id.nome} (você)` : pessoa.usuario_id.nome;
 
   const caminho = `/reunioes/${reuniao._id}`;
+  const anexos = reuniao.anexos ?? [];
+  // Só quem agendou mexe nos anexos, e só até a reunião terminar ou ser cancelada.
+  const anexosEditaveis = dono && !cancelada && !terminou;
+  const reuniaoId = reuniao._id;
+
+  async function adicionarAnexos() {
+    if (salvando) return;
+    const escolhidos = await escolherArquivos();
+    if (escolhidos.length === 0) return;
+    const problema = validarArquivos(escolhidos, anexos.length);
+    definirSucesso('');
+    if (problema) {
+      definirErro(problema);
+      return;
+    }
+    definirErro('');
+    definirSalvando('anexo');
+    let enviados = 0;
+    for (const arquivo of escolhidos) {
+      const resultado = await enviarAnexo(reuniaoId, arquivo);
+      if (!resultado.ok) {
+        definirErro(`${arquivo.nome}: ${resultado.erro}`);
+        break;
+      }
+      definirReuniao(resultado.dados);
+      enviados += 1;
+    }
+    definirSalvando(null);
+    if (enviados > 0) definirSucesso(plural(enviados, 'anexo adicionado.', 'anexos adicionados.'));
+  }
+
+  function confirmarRemocao(item: ItemAnexo) {
+    definirConfirmacao({
+      mensagem: `Remover o anexo ${item.nome}?`,
+      acao: async () => {
+        await executar('anexo', () => removerAnexo(reuniaoId, item.chave), 'Anexo removido.');
+        definirConfirmacao(null);
+      },
+    });
+  }
+
+  async function abrir(item: ItemAnexo) {
+    const anexo = anexos.find((atual) => atual._id === item.chave);
+    if (!anexo) return;
+    definirErro('');
+    definirAbrindoAnexo(item.chave);
+    const problema = await abrirAnexo(reuniaoId, anexo);
+    definirAbrindoAnexo(null);
+    if (problema) definirErro(problema);
+  }
 
   function marcarPresenca(pessoa: Pessoa, situacao: 'CONFIRMADA' | 'RECUSADA') {
     void executar(`presenca-${pessoa.usuario_id._id}`, () =>
       api<Reuniao>(`${caminho}/presencas/${pessoa.usuario_id._id}`, 'PATCH', { situacao }),
+    );
+  }
+
+  // Desistir depois de ter aceitado pede confirmação; recusar convite pendente, não.
+  function recusarConvite() {
+    const recusar = () =>
+      executar(
+        'recusar',
+        () => api<Reuniao>(`${caminho}/convite`, 'PATCH', { aceito: false }),
+        'Convite recusado.',
+      );
+    if (eu?.convite !== 'ACEITO') {
+      void recusar();
+      return;
+    }
+    definirConfirmacao({
+      mensagem: 'Avisar que você não vai mais participar desta reunião?',
+      acao: async () => {
+        await recusar();
+        definirConfirmacao(null);
+      },
+    });
+  }
+
+  // Entrada e saída passam pela biometria ou PIN do aparelho, como a aprovação da ata.
+  async function registrar(chave: 'entrada' | 'saida') {
+    if (salvando) return;
+    definirErro('');
+    definirSucesso('');
+    if (!(await autenticarComDispositivo())) {
+      definirErro('Não foi possível confirmar sua identidade.');
+      return;
+    }
+    await executar(
+      chave,
+      () => api<Reuniao>(`${caminho}/${chave}`, 'POST'),
+      chave === 'entrada' ? 'Entrada marcada.' : 'Saída marcada.',
     );
   }
 
@@ -185,7 +285,10 @@ export default function TelaReuniao() {
   const ata = situacaoDaAta(reuniao.ata);
   const minha = minhaPresenca();
   const tomMinha = tons[minha.tom];
-  const mostrarConvite = !dono && !cancelada && !terminou && eu && !eu.presenca && eu.convite !== 'ACEITO';
+  // O convite aceito continua na tela para quem desistir, até marcar entrada.
+  const mostrarConvite = !dono && !cancelada && !terminou && eu && !eu.presenca;
+  const jaAceitou = eu?.convite === 'ACEITO';
+  const horarioAlterado = Boolean(reuniao.horario_alterado_em) && eu?.convite === 'PENDENTE';
   const mostrarPresenca = entradaAberta(reuniao, agora) && eu && eu.convite !== 'RECUSADO';
   const mostrarRestantes = restantes.length > 0 && (dono || !comecou);
   const emAndamento = !cancelada && comecou && !terminou;
@@ -199,6 +302,12 @@ export default function TelaReuniao() {
   const votacoesPendentes = (reuniao.votacoes ?? []).filter(
     (votacao) => votacao.situacao === 'ABERTA' && votacao.meu_voto === null,
   ).length;
+  const tomConvite = tons[jaAceitou ? 'sucesso' : 'alerta'];
+  const iconeConvite = jaAceitou
+    ? ('checkmark-circle-outline' as const)
+    : horarioAlterado
+      ? ('time-outline' as const)
+      : ('mail-outline' as const);
 
   return (
     <TelaComCabecalho
@@ -238,10 +347,12 @@ export default function TelaReuniao() {
             {formatarData(reuniao.inicio)} · {intervalo(reuniao)}
           </Text>
         </View>
-        <View style={styles.linha}>
-          <Ionicons name="location-outline" size={18} color={cores.textoSutil} />
-          <Text style={[styles.info, { color: cores.textoSuave }]}>{reuniao.local}</Text>
-        </View>
+        {reuniao.local ? (
+          <View style={styles.linha}>
+            <Ionicons name="location-outline" size={18} color={cores.textoSutil} />
+            <Text style={[styles.info, { color: cores.textoSuave }]}>{reuniao.local}</Text>
+          </View>
+        ) : null}
       </View>
 
       {erro ? <FaixaAviso aviso={{ tom: 'erro', mensagem: erro }} /> : null}
@@ -250,49 +361,55 @@ export default function TelaReuniao() {
       {mostrarConvite ? (
         <View style={[styles.cartaoAcao, { backgroundColor: cores.superficie, borderColor: cores.bordaSuave }]}>
           <View style={styles.linhaAcao}>
-            <View style={[styles.iconeAcao, { backgroundColor: cores.alertaSuave }]}>
-              <Ionicons name="mail-outline" size={20} color={cores.alerta} />
+            <View style={[styles.iconeAcao, { backgroundColor: tomConvite.fundo }]}>
+              <Ionicons name={iconeConvite} size={20} color={tomConvite.cor} />
             </View>
             <View style={styles.textos}>
-              <Text style={[styles.legenda, { color: cores.textoSuave }]}>Convite</Text>
+              <Text style={[styles.legenda, { color: cores.textoSuave }]}>
+                {horarioAlterado ? 'Horário alterado' : 'Convite'}
+              </Text>
               <Text style={[styles.destaque, { color: cores.texto }]}>
-                {eu.convite === 'PENDENTE' ? 'Aguardando sua resposta' : 'Você recusou o convite'}
+                {eu.convite === 'PENDENTE'
+                  ? horarioAlterado
+                    ? 'Confirme se vai participar no novo horário'
+                    : 'Aguardando sua resposta'
+                  : jaAceitou
+                    ? 'Você confirmou presença'
+                    : 'Você recusou o convite'}
               </Text>
             </View>
           </View>
           <View style={styles.botoes}>
-            {eu.convite === 'PENDENTE' ? (
+            {eu.convite !== 'RECUSADO' ? (
               <Botao
-                titulo="Recusar"
+                titulo={jaAceitou ? 'Não vou mais' : 'Recusar'}
                 variante="secundario"
                 pilula
                 compacto
                 desabilitado={salvando !== null}
                 carregando={salvando === 'recusar'}
+                aoTocar={recusarConvite}
+                style={styles.botao}
+              />
+            ) : null}
+            {jaAceitou ? null : (
+              <Botao
+                titulo={eu.convite === 'PENDENTE' ? 'Aceitar' : 'Aceitar convite'}
+                variante={eu.convite === 'PENDENTE' ? 'primario' : 'secundario'}
+                pilula
+                compacto
+                desabilitado={salvando !== null}
+                carregando={salvando === 'aceitar'}
                 aoTocar={() =>
-                  void executar('recusar', () =>
-                    api<Reuniao>(`${caminho}/convite`, 'PATCH', { aceito: false }),
+                  void executar(
+                    'aceitar',
+                    () => api<Reuniao>(`${caminho}/convite`, 'PATCH', { aceito: true }),
+                    'Convite aceito.',
                   )
                 }
                 style={styles.botao}
               />
-            ) : null}
-            <Botao
-              titulo={eu.convite === 'PENDENTE' ? 'Aceitar' : 'Aceitar convite'}
-              variante={eu.convite === 'PENDENTE' ? 'primario' : 'secundario'}
-              pilula
-              compacto
-              desabilitado={salvando !== null}
-              carregando={salvando === 'aceitar'}
-              aoTocar={() =>
-                void executar(
-                  'aceitar',
-                  () => api<Reuniao>(`${caminho}/convite`, 'PATCH', { aceito: true }),
-                  'Convite aceito.',
-                )
-              }
-              style={styles.botao}
-            />
+            )}
           </View>
         </View>
       ) : null}
@@ -315,9 +432,7 @@ export default function TelaReuniao() {
               pilula
               carregando={salvando === 'entrada'}
               desabilitado={salvando !== null}
-              aoTocar={() =>
-                void executar('entrada', () => api<Reuniao>(`${caminho}/entrada`, 'POST'), 'Entrada marcada.')
-              }
+              aoTocar={() => void registrar('entrada')}
             />
           ) : eu.presenca.situacao !== 'RECUSADA' && !eu.presenca.saida ? (
             <Botao
@@ -327,9 +442,7 @@ export default function TelaReuniao() {
               pilula
               carregando={salvando === 'saida'}
               desabilitado={salvando !== null}
-              aoTocar={() =>
-                void executar('saida', () => api<Reuniao>(`${caminho}/saida`, 'POST'), 'Saída marcada.')
-              }
+              aoTocar={() => void registrar('saida')}
             />
           ) : null}
         </View>
@@ -339,7 +452,7 @@ export default function TelaReuniao() {
         <Pressable
           onPress={() => router.push({ pathname: '/reunioes/registros', params: { id: reuniao._id } })}
           accessibilityRole="button"
-          accessibilityLabel={`Ata, ${ata.texto}`}
+          accessibilityLabel={`${numeroDaAta(reuniao.ata)}, ${ata.texto}`}
           style={({ pressed }) => [
             styles.cartaoAcao,
             styles.linhaAcao,
@@ -350,13 +463,14 @@ export default function TelaReuniao() {
             <Ionicons name="document-text-outline" size={20} color={cores.primaria} />
           </View>
           <View style={styles.textos}>
-            <Text style={[styles.legenda, { color: cores.textoSuave }]}>Ata</Text>
+            <Text style={[styles.legenda, { color: cores.textoSuave }]}>{numeroDaAta(reuniao.ata)}</Text>
             <Text style={[styles.destaque, { color: cores.texto }]}>{ata.texto}</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={cores.textoSutil} />
         </Pressable>
       ) : null}
 
+      <AcessoPresidente reuniaoId={reuniao._id} />
       <Abas<Aba>
         abas={[
           { chave: 'presenca', rotulo: 'Presença', contador: dono ? aguardando.length : 0 },
@@ -526,18 +640,49 @@ export default function TelaReuniao() {
       ) : null}
 
       {aba === 'pauta' ? (
-        !reuniao.pauta?.trim() ? (
-          <EstadoVazio icone="list-outline" mensagem="Sem pauta." />
-        ) : (
-          <View style={[styles.lista, styles.pauta, { backgroundColor: cores.superficie, borderColor: cores.bordaSuave }]}>
-            <Text style={[styles.textoPauta, { color: cores.texto }]} selectable>
-              {reuniao.pauta.trim()}
-            </Text>
-          </View>
-        )
+        <>
+          {reuniao.pauta?.trim() ? (
+            <View style={[styles.lista, styles.pauta, { backgroundColor: cores.superficie, borderColor: cores.bordaSuave }]}>
+              <Text style={[styles.textoPauta, { color: cores.texto }]} selectable>
+                {reuniao.pauta.trim()}
+              </Text>
+            </View>
+          ) : anexos.length === 0 && !anexosEditaveis ? (
+            <EstadoVazio icone="list-outline" mensagem="Sem pauta." />
+          ) : null}
+          <ListaAnexos
+            titulo="Anexos"
+            itens={anexos.map((anexo) => ({
+              chave: anexo._id,
+              nome: anexo.nome,
+              tipo: anexo.tipo,
+              tamanho: anexo.tamanho,
+            }))}
+            limite={anexosEditaveis ? MAXIMO_ANEXOS : undefined}
+            abrindo={abrindoAnexo}
+            desabilitado={salvando !== null}
+            aoAbrir={(item) => void abrir(item)}
+            aoAdicionar={anexosEditaveis ? () => void adicionarAnexos() : undefined}
+            aoRemover={anexosEditaveis ? confirmarRemocao : undefined}
+          />
+        </>
       ) : null}
 
       <FolhaInferior visivel={opcoes} titulo="Opções" aoFechar={() => definirOpcoes(false)}>
+        <Pressable
+          onPress={() => {
+            definirOpcoes(false);
+            router.push({ pathname: '/reunioes/editar/[id]', params: { id: reuniao._id } });
+          }}
+          accessibilityRole="button"
+          style={({ pressed }) => [
+            styles.opcao,
+            { borderTopColor: cores.bordaSuave, opacity: pressed ? 0.7 : 1 },
+          ]}
+        >
+          <Ionicons name="create-outline" size={22} color={cores.primaria} />
+          <Text style={[styles.textoOpcao, { color: cores.primaria }]}>Editar reunião</Text>
+        </Pressable>
         <Pressable
           onPress={() => {
             definirOpcoes(false);

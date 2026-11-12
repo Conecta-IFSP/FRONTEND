@@ -4,6 +4,8 @@ import { ESPACO, FONTES, RAIO, TIPOGRAFIA } from '@/constants/theme';
 import { useTema } from '@/contexts/TemaContext';
 
 type ConfirmacaoProps = {
+  /** Opcional: título acima da mensagem. Sem ele, o diálogo fica como antes. */
+  titulo?: string;
   mensagem?: string;
   confirmar: () => void;
   cancelar: () => void;
@@ -13,6 +15,7 @@ type ConfirmacaoProps = {
 };
 
 export function Confirmacao({
+  titulo,
   mensagem,
   confirmar,
   cancelar,
@@ -40,7 +43,12 @@ export function Confirmacao({
           accessibilityRole="alert"
           style={[styles.dialogo, { backgroundColor: cores.superficie }, tema.sombra]}
         >
-          <Text style={[styles.mensagem, { color: cores.texto }]}>{mensagem}</Text>
+          {titulo ? (
+            <Text style={[styles.titulo, { color: cores.texto }]} accessibilityRole="header">
+              {titulo}
+            </Text>
+          ) : null}
+          <Text style={[styles.mensagem, { color: titulo ? cores.textoSuave : cores.texto }]}>{mensagem}</Text>
           <View style={styles.botoes}>
             <Pressable
               onPress={cancelar}
@@ -80,6 +88,7 @@ const styles = StyleSheet.create({
     paddingBottom: ESPACO.md,
     borderRadius: RAIO.xl - 4,
   },
+  titulo: { ...TIPOGRAFIA.subtitulo, marginBottom: ESPACO.sm },
   mensagem: { ...TIPOGRAFIA.corpo, marginBottom: ESPACO.md + 4 },
   botoes: { flexDirection: 'row', justifyContent: 'flex-end', gap: ESPACO.sm },
   botao: {

@@ -17,11 +17,13 @@ import { ItemReuniao } from '@/components/ItemReuniao';
 import { ESPACO, FONTES, MARCA, RAIO, TEMAS, TIPOGRAFIA } from '@/constants/theme';
 import { useTema } from '@/contexts/TemaContext';
 import { useSessao } from '@/contexts/SessaoContext';
-import { api, type Organizacao, type Reuniao } from '@/services/api';
+import { api, type AtaPendente, type Organizacao, type Reuniao } from '@/services/api';
 import {
   diaDaSemana,
   entradaAberta,
+  formatarDataCurta,
   formatarHora,
+  horarioCurto,
   intervalo,
   MESES,
   meuParticipante,
@@ -51,6 +53,7 @@ export default function TelaInicio() {
   const [organizacoes, definirOrganizacoes] = useState<Organizacao[]>([]);
   const [solicitacoes, definirSolicitacoes] = useState<Record<string, number>>({});
   const [reunioes, definirReunioes] = useState<Reuniao[]>([]);
+  const [atas, definirAtas] = useState<AtaPendente[]>([]);
   const [agora, definirAgora] = useState(() => Date.now());
   const [carregando, definirCarregando] = useState(true);
   const [atualizando, definirAtualizando] = useState(false);
@@ -68,11 +71,13 @@ export default function TelaInicio() {
 
   const carregar = useCallback(
     async (continuar: () => boolean = () => true) => {
-      const [resultado, agenda] = await Promise.all([
+      const [resultado, agenda, atasPendentes] = await Promise.all([
         api<Organizacao[]>('/organizacoes'),
         administradorDoSistema ? null : carregarReunioes(),
+        administradorDoSistema ? null : api<AtaPendente[]>('/reunioes/atas/pendentes'),
       ]);
       if (!continuar()) return;
+      if (atasPendentes?.ok) definirAtas(atasPendentes.dados);
       if (agenda) {
         definirAgora(agenda.inicio);
         if (agenda.resultado.ok) definirReunioes(agenda.resultado.dados);
@@ -291,7 +296,7 @@ export default function TelaInicio() {
                     </View>
                     <Text style={styles.tituloDestaque}>{emCurso.titulo}</Text>
                     <Text style={styles.detalheDestaque} numberOfLines={1}>
-                      {emCurso.comissao_id?.nome ?? 'Comissão'} · {emCurso.local}
+                      {[emCurso.comissao_id?.nome ?? 'Comissão', emCurso.local].filter(Boolean).join(' · ')}
                     </Text>
                     <View style={[styles.trilha, { backgroundColor: `${MARCA.branco}40` }]}>
                       <View style={[styles.progresso, { width: `${progresso}%` }]} />
@@ -383,6 +388,65 @@ export default function TelaInicio() {
               ) : null}
             </View>
 
+            {atas.length > 0 ? (
+              <View>
+                <View style={styles.cabecalhoSecao}>
+                  <Text style={[styles.secao, { color: cores.texto }]} accessibilityRole="header">
+                    Atas
+                  </Text>
+                </View>
+                <View style={[styles.lista, { backgroundColor: cores.superficie, borderColor: cores.bordaSuave }]}>
+                  {atas.map((item, indice) => {
+                    const reprovada = item.ata.situacao === 'REPROVADA';
+                    const vencida = Boolean(item.ata.prazo && new Date(item.ata.prazo).getTime() < agora);
+                    const prazo = item.ata.prazo
+                      ? `${formatarDataCurta(item.ata.prazo)} às ${formatarHora(item.ata.prazo)}`
+                      : '';
+                    const detalhe = reprovada
+                      ? 'Reprovada · corrija e envie de novo'
+                      : prazo
+                        ? `${vencida ? 'Prazo encerrado em' : 'Aprovar até'} ${prazo}`
+                        : 'Esperando sua aprovação';
+                    return (
+                      <Pressable
+                        key={item._id}
+                        onPress={() => router.push({ pathname: '/reunioes/registros', params: { id: item._id } })}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${reprovada ? 'Ata reprovada' : 'Ata para aprovar'}, ${item.titulo}, ${detalhe}`}
+                        style={({ pressed }) => [
+                          styles.itemAta,
+                          indice > 0 ? { borderTopWidth: 1, borderTopColor: cores.bordaSuave } : null,
+                          { opacity: pressed ? 0.7 : 1 },
+                        ]}
+                      >
+                        <View
+                          style={[styles.iconeBloco, { backgroundColor: reprovada ? cores.erroSuave : cores.primariaSuave }]}
+                        >
+                          <Ionicons
+                            name={reprovada ? 'alert-circle-outline' : 'document-text-outline'}
+                            size={18}
+                            color={reprovada ? cores.erro : cores.primaria}
+                          />
+                        </View>
+                        <View style={styles.textosAta}>
+                          <Text numberOfLines={1} style={[styles.nomeConvite, { color: cores.texto }]}>
+                            {item.titulo}
+                          </Text>
+                          <Text
+                            numberOfLines={1}
+                            style={[styles.detalheConvite, { color: reprovada || vencida ? cores.erro : cores.textoSuave }]}
+                          >
+                            {[detalhe, item.comissao_id?.nome].filter(Boolean).join(' · ')}
+                          </Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={cores.textoSutil} />
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            ) : null}
+
             <View>
               <View style={styles.cabecalhoSecao}>
                 <Text style={[styles.secao, { color: cores.texto }]} accessibilityRole="header">
@@ -459,7 +523,7 @@ export default function TelaInicio() {
                   <Text numberOfLines={1} style={[styles.detalheConvite, { color: cores.textoSuave }]}>
                     {convite.tipo === 'organizacao'
                       ? 'Convite para a organização'
-                      : `${formatarHora(convite.reuniao.inicio)} · ${convite.reuniao.comissao_id?.nome ?? 'Comissão'}`}
+                      : `${horarioCurto(convite.reuniao)} · ${convite.reuniao.comissao_id?.nome ?? 'Comissão'}`}
                   </Text>
                 </View>
               </View>
@@ -575,6 +639,14 @@ const styles = StyleSheet.create({
   textoLink: { fontFamily: FONTES.corpoMedio, fontSize: 14, lineHeight: 20 },
   menu: { gap: ESPACO.md },
   lista: { borderWidth: 1, borderRadius: RAIO.lg, overflow: 'hidden' },
+  itemAta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ESPACO.md - 4,
+    paddingVertical: ESPACO.sm + 4,
+    paddingHorizontal: ESPACO.md - 2,
+  },
+  textosAta: { flex: 1, minWidth: 0 },
   semConvites: { ...TIPOGRAFIA.corpoPequeno, paddingHorizontal: ESPACO.md, paddingVertical: ESPACO.md },
   convite: {
     gap: ESPACO.sm + 2,

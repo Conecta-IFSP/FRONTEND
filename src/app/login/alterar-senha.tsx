@@ -20,7 +20,7 @@ const VAZIO: DadosSenha = { atual: '', nova: '', confirmacao: '' };
 export default function TelaAlterarSenha() {
   const router = useRouter();
   const { cores } = useTema().tema;
-  const { control, handleSubmit, formState } = useForm<DadosSenha>({ defaultValues: VAZIO });
+  const { control, handleSubmit, setFocus, formState } = useForm<DadosSenha>({ defaultValues: VAZIO });
   const carregando = formState.isSubmitting;
   const [erro, definirErro] = useState('');
   const [concluido, definirConcluido] = useState(false);
@@ -102,6 +102,8 @@ export default function TelaAlterarSenha() {
             textContentType="password"
             editable={!carregando}
             acaoFinal={olho('atual')}
+            returnKeyType="next"
+            onSubmitEditing={() => setFocus('nova')}
             compacto
           />
 
@@ -118,6 +120,8 @@ export default function TelaAlterarSenha() {
             textContentType="newPassword"
             editable={!carregando}
             acaoFinal={olho('nova')}
+            returnKeyType="next"
+            onSubmitEditing={() => setFocus('confirmacao')}
             compacto
           />
 

@@ -49,6 +49,15 @@ export async function removerToken() {
 
 export type Resultado<T> = { ok: true; dados: T } | { ok: false; erro: string };
 
+/** Endereço completo de uma rota e cabeçalhos de acesso, para downloads feitos fora do `api()`. */
+export async function acessoAutenticado(caminho: string) {
+  if (!URL_API || !CHAVE_API) return null;
+  const token = await obterToken();
+  const cabecalhos: Record<string, string> = { 'X-API-Key': CHAVE_API };
+  if (token) cabecalhos.Authorization = `Bearer ${token}`;
+  return { url: `${URL_API}${caminho}`, cabecalhos };
+}
+
 export async function api<T>(
   caminho: string,
   metodo: 'GET' | 'POST' | 'PATCH' | 'DELETE' = 'GET',
@@ -62,16 +71,18 @@ export async function api<T>(
   }
 
   const token = await obterToken();
+  // Em formulários (envio de arquivo), o próprio fetch define o Content-Type com o boundary.
+  const formulario = typeof FormData !== 'undefined' && corpo instanceof FormData;
 
   try {
     const resposta = await fetch(`${URL_API}${caminho}`, {
       method: metodo,
       headers: {
-        'Content-Type': 'application/json',
+        ...(formulario ? {} : { 'Content-Type': 'application/json' }),
         'X-API-Key': CHAVE_API,
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: corpo === undefined ? undefined : JSON.stringify(corpo),
+      body: corpo === undefined ? undefined : formulario ? corpo : JSON.stringify(corpo),
     });
 
     const dados = (await resposta.json().catch(() => null)) as
@@ -136,7 +147,7 @@ export type Presenca = {
   entrada: string;
   saida?: string;
   situacao: SituacaoPresenca;
-  marcada_por: 'PROPRIO' | 'RESPONSAVEL';
+  marcada_por: 'PROPRIO' | 'RESPONSAVEL' | 'LINK';
 };
 
 export type Participante = {
@@ -145,14 +156,43 @@ export type Participante = {
   presenca?: Presenca;
 };
 
+export type AvaliacaoAta = {
+  usuario_id: string;
+  decisao: 'APROVADA' | 'REPROVADA';
+  trecho?: string;
+  justificativa?: string;
+  em: string;
+};
+
 export type Ata = {
   conteudo: string;
   versao: number;
-  situacao: 'RASCUNHO' | 'EM_APROVACAO' | 'APROVADA';
+  situacao: 'RASCUNHO' | 'EM_APROVACAO' | 'APROVADA' | 'REPROVADA' | 'CANCELADA';
   autor_id: string;
   atualizada_em: string;
+  enviada_em?: string;
+  prazo?: string;
   aprovadores: string[];
-  aprovacoes: string[];
+  avaliacoes: AvaliacaoAta[];
+  numero?: number;
+  ano?: number;
+  aprovada_em?: string;
+  cancelada_em?: string;
+};
+
+export type AtaPendente = {
+  _id: string;
+  titulo: string;
+  comissao_id: { _id: string; nome: string } | null;
+  ata: Pick<Ata, 'situacao' | 'prazo'>;
+};
+
+export type Anexo = {
+  _id: string;
+  nome: string;
+  tipo: string;
+  tamanho: number;
+  enviado_em: string;
 };
 
 export type Votacao = {
@@ -171,13 +211,17 @@ export type Votacao = {
 export type Reuniao = {
   ata?: Ata;
   votacoes?: Votacao[];
+  atas_canceladas?: Ata[];
   _id: string;
   comissao_id: { _id: string; nome: string; organizacao_id: string } | null;
   titulo: string;
   local: string;
   inicio: string;
   fim: string;
+  dia_inteiro?: boolean;
+  horario_alterado_em?: string;
   pauta: string;
+  anexos?: Anexo[];
   criada_por: string;
   situacao: 'AGENDADA' | 'CANCELADA';
   participantes: Participante[];

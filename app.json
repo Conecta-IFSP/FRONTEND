@@ -51,7 +51,7 @@
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "O Conecta+ usa o Face ID para proteger as configurações da sua conta."
+          "faceIDPermission": "O Conecta+ usa o Face ID para proteger as configurações da sua conta e confirmar a aprovação de atas."
         }
       ],
       [
@@ -62,7 +62,8 @@
           }
         }
       ],
-      "expo-status-bar"
+      "expo-status-bar",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true
