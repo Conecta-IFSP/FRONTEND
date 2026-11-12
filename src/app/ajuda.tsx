@@ -1,16 +1,20 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller';
 
 import { Botao } from '@/components/Botao';
+import { CampoTexto } from '@/components/CampoTexto';
+import { EstadoVazio } from '@/components/EstadoVazio';
 import { Sanfona } from '@/components/Sanfona';
 import { TelaComCabecalho } from '@/components/TelaComCabecalho';
 import { SELO_PERFIL, TOPICOS_AJUDA, URL_MANUAL_PDF } from '@/constants/ajuda';
 import { ESPACO, FONTES, RAIO, TIPOGRAFIA } from '@/constants/theme';
 import { useSessao } from '@/contexts/SessaoContext';
 import { useTema } from '@/contexts/TemaContext';
+import { filtrarTopicosAjuda } from '@/utils/busca-ajuda';
+import { plural } from '@/utils/reunioes';
 
 function primeiraPerguntaDo(topicoId: string | undefined) {
   return TOPICOS_AJUDA.find((topico) => topico.id === topicoId)?.perguntas[0]?.id;
@@ -29,6 +33,10 @@ export default function TelaAjuda() {
     const inicial = primeiraPerguntaDo(topico);
     return new Set(inicial ? [inicial] : []);
   });
+  const [busca, definirBusca] = useState('');
+  const buscando = busca.trim().length > 0;
+  const topicosVisiveis = useMemo(() => filtrarTopicosAjuda(TOPICOS_AJUDA, busca), [busca]);
+  const encontradas = topicosVisiveis.reduce((total, item) => total + item.perguntas.length, 0);
 
   const rolarParaTopico = useCallback(() => {
     if (!topico || rolouPara.current === topico) return;
@@ -68,7 +76,37 @@ export default function TelaAjuda() {
         responsável pela comissão.
       </Text>
 
-      {TOPICOS_AJUDA.map((item) => (
+      <CampoTexto
+        rotulo="Buscar"
+        placeholder="Ex.: ata, votação, senha"
+        icone="search-outline"
+        value={busca}
+        onChangeText={definirBusca}
+        autoCapitalize="none"
+        autoCorrect={false}
+        returnKeyType="search"
+        compacto
+        acaoFinal={
+          busca ? { icone: 'close-circle', rotuloAcessivel: 'Limpar busca', aoTocar: () => definirBusca('') } : undefined
+        }
+      />
+
+      {buscando ? (
+        <Text style={[styles.introducao, { color: cores.textoSuave }]} accessibilityLiveRegion="polite">
+          {encontradas > 0
+            ? plural(encontradas, 'pergunta encontrada', 'perguntas encontradas')
+            : 'Nenhuma pergunta encontrada.'}
+        </Text>
+      ) : null}
+
+      {buscando && encontradas === 0 ? (
+        <EstadoVazio
+          icone="search-outline"
+          mensagem="Tente outra palavra, como o nome da tela ou do botão. Se não encontrar, consulte o manual completo."
+        />
+      ) : null}
+
+      {topicosVisiveis.map((item) => (
         <View
           key={item.id}
           onLayout={(evento) => {
