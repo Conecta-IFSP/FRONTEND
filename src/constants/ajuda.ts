@@ -45,9 +45,13 @@ export const SELO_PERFIL: Record<PerfilAjuda, string | null> = {
   todos: null,
 };
 
-// TODO: informar a URL pública do manual completo em PDF. Enquanto estiver
-// vazia, o botão "Ver manual completo (PDF)" não aparece na tela Ajuda.
-export const URL_MANUAL_PDF = '';
+// Manual completo em PDF, publicado como arquivo da Release "manual" do repositório
+// DOCUMENTATION. Para atualizar, envie o novo PDF com o MESMO nome de arquivo:
+//   gh release upload manual Manual-do-Usuario-Conecta.pdf --clobber -R Conecta-IFSP/DOCUMENTATION
+// Assim o link não muda e não é preciso publicar uma nova versão do app.
+// Se esta constante ficar vazia, o botão "Ver manual completo (PDF)" some da tela Ajuda.
+export const URL_MANUAL_PDF =
+  'https://github.com/Conecta-IFSP/DOCUMENTATION/releases/download/manual/Manual-do-Usuario-Conecta.pdf';
 
 export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
   {
@@ -55,24 +59,6 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
     titulo: 'Conta e acesso',
     icone: 'person-circle-outline',
     perguntas: [
-      {
-        id: 'conta-entrar',
-        perfil: 'todos',
-        pergunta: 'Como crio uma conta?',
-        resposta: [
-          'Na tela Entrar, toque em Criar conta.',
-          'Preencha nome, e-mail, senha e a confirmação da senha.',
-          'Toque em Criar conta.',
-          'Digite o código enviado ao seu e-mail e toque em Continuar.',
-        ],
-      },
-      {
-        id: 'conta-google',
-        perfil: 'todos',
-        pergunta: 'Posso entrar com minha conta Google?',
-        resposta:
-          'Sim. Na tela Entrar, toque em Continuar com Google e escolha sua conta. Se for o primeiro acesso, a conta do Conecta+ é criada com o seu nome e e-mail do Google.',
-      },
       {
         id: 'conta-esqueci-senha',
         perfil: 'todos',
@@ -108,17 +94,6 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
         pergunta: 'Por que o app pede minha biometria?',
         resposta:
           'Para confirmar que é você em ações importantes: marcar entrada e saída, enviar ou aprovar a ata, alterar e-mail ou senha e criar uma nova senha. Se o aparelho não tiver biometria, PIN ou senha de bloqueio, o app não pede a confirmação.',
-      },
-      {
-        id: 'conta-tema-sair',
-        perfil: 'todos',
-        pergunta: 'Como mudo o tema ou saio da conta?',
-        resposta: [
-          'Toque no seu avatar, no topo da tela.',
-          'Em Tema, escolha Sistema, Claro ou Escuro.',
-          'Para sair, toque em Sair da conta.',
-          'Toque em Sair para confirmar.',
-        ],
       },
     ],
   },
