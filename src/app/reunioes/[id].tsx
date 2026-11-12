@@ -15,6 +15,7 @@ import { FaixaAviso } from '@/components/FaixaAviso';
 import { FolhaInferior } from '@/components/FolhaInferior';
 import { ListaAnexos, type ItemAnexo } from '@/components/ListaAnexos';
 import { TelaComCabecalho } from '@/components/TelaComCabecalho';
+import { VotacoesReuniao } from '@/components/VotacoesReuniao';
 import { ESPACO, FONTES, RAIO, TIPOGRAFIA } from '@/constants/theme';
 import { useSessao } from '@/contexts/SessaoContext';
 import { useTema } from '@/contexts/TemaContext';
@@ -26,7 +27,7 @@ import {
   removerAnexo,
   validarArquivos,
 } from '@/services/anexos';
-import { api, type Participante, type Reuniao, type Resultado } from '@/services/api';
+import { api, type Comissao, type Participante, type Reuniao, type Resultado } from '@/services/api';
 import { autenticarComDispositivo } from '@/services/autenticacao-local';
 import {
   entradaAberta,
@@ -40,7 +41,7 @@ import {
   situacaoDaReuniao,
 } from '@/utils/reunioes';
 
-type Aba = 'presenca' | 'pauta';
+type Aba = 'presenca' | 'votacoes' | 'pauta';
 
 type Pendente = { mensagem: string; acao: () => Promise<unknown> };
 
@@ -61,15 +62,29 @@ export default function TelaReuniao() {
   const [sucesso, definirSucesso] = useState('');
   const [opcoes, definirOpcoes] = useState(false);
   const [confirmacao, definirConfirmacao] = useState<Pendente | null>(null);
+  const [presidente, definirPresidente] = useState(false);
   const [abrindoAnexo, definirAbrindoAnexo] = useState<string | null>(null);
 
   const buscar = useCallback(async () => {
     const resultado = await api<Reuniao>(`/reunioes/${id}`);
     definirCarregando(false);
     definirAgora(Date.now());
-    if (resultado.ok) definirReuniao(resultado.dados);
-    else definirErro(resultado.erro);
-  }, [id]);
+    if (!resultado.ok) {
+      definirErro(resultado.erro);
+      return;
+    }
+    definirReuniao(resultado.dados);
+    if (resultado.dados.comissao_id) {
+      const comissao = await api<Comissao>(`/comissoes/${resultado.dados.comissao_id._id}`);
+      definirPresidente(
+        comissao.ok &&
+          comissao.dados.ativo &&
+          comissao.dados.membros.some(
+            (membro) => membro.usuario_id?._id === usuario?._id && membro.papel === 'RESPONSAVEL',
+          ),
+      );
+    }
+  }, [id, usuario?._id]);
 
   useFocusEffect(
     useCallback(() => {
@@ -276,6 +291,17 @@ export default function TelaReuniao() {
   const horarioAlterado = Boolean(reuniao.horario_alterado_em) && eu?.convite === 'PENDENTE';
   const mostrarPresenca = entradaAberta(reuniao, agora) && eu && eu.convite !== 'RECUSADO';
   const mostrarRestantes = restantes.length > 0 && (dono || !comecou);
+  const emAndamento = !cancelada && comecou && !terminou;
+  const motivoSemVoto = cancelada
+    ? 'Esta reunião foi cancelada.'
+    : !eu?.presenca || eu.presenca.situacao === 'RECUSADA'
+      ? 'Marque sua entrada na reunião para votar.'
+      : eu.presenca.saida
+        ? 'Você já saiu da reunião e não pode mais votar.'
+        : null;
+  const votacoesPendentes = (reuniao.votacoes ?? []).filter(
+    (votacao) => votacao.situacao === 'ABERTA' && votacao.meu_voto === null,
+  ).length;
   const tomConvite = tons[jaAceitou ? 'sucesso' : 'alerta'];
   const iconeConvite = jaAceitou
     ? ('checkmark-circle-outline' as const)
@@ -448,6 +474,7 @@ export default function TelaReuniao() {
       <Abas<Aba>
         abas={[
           { chave: 'presenca', rotulo: 'Presença', contador: dono ? aguardando.length : 0 },
+          { chave: 'votacoes', rotulo: 'Votações', contador: motivoSemVoto ? 0 : votacoesPendentes },
           { chave: 'pauta', rotulo: 'Pauta' },
         ]}
         ativa={aba}
@@ -599,6 +626,17 @@ export default function TelaReuniao() {
             </>
           ) : null}
         </>
+      ) : null}
+
+      {aba === 'votacoes' ? (
+        <VotacoesReuniao
+          reuniao={reuniao}
+          presidente={presidente}
+          emAndamento={emAndamento}
+          motivoSemVoto={motivoSemVoto}
+          salvando={salvando}
+          executar={executar}
+        />
       ) : null}
 
       {aba === 'pauta' ? (
