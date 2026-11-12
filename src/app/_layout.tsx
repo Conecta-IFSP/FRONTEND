@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { Stack, usePathname } from 'expo-router';
+import { Stack, usePathname, useRouter } from 'expo-router';
+import { consumirRetornoPresenca } from '@/services/retorno-presenca';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
@@ -42,7 +43,17 @@ export default function LayoutRaiz() {
 function Navegacao() {
   const { tema } = useTema();
   const { usuario, carregando, atualizar } = useSessao();
+  const usuarioId = usuario?._id;
   const caminho = usePathname();
+  const router = useRouter();
+  useEffect(() => {
+    if (!usuarioId || carregando || caminho.includes('google-callback')) return;
+    let ativa = true;
+    void consumirRetornoPresenca().then(retorno => {
+      if (ativa && retorno && caminho !== '/presenca') router.replace({ pathname: '/presenca', params: retorno });
+    }).catch(() => {});
+    return () => { ativa = false; };
+  }, [usuarioId, carregando, caminho, router]);
   useEffect(() => { void atualizar(); }, [caminho, atualizar]);
   if (carregando) return <Carregando rotulo="Verificando sessão" />;
 
@@ -55,6 +66,7 @@ function Navegacao() {
         <Stack.Screen name="index" />
         {/* Fora dos grupos protegidos: a Ajuda abre com ou sem login. */}
         <Stack.Screen name="ajuda" />
+        <Stack.Screen name="presenca" />
         <Stack.Protected guard={!usuario}>
           <Stack.Screen name="login/index" />
           <Stack.Screen name="login/cadastro" />
@@ -80,6 +92,8 @@ function Navegacao() {
           <Stack.Screen name="reunioes/nova" />
           <Stack.Screen name="reunioes/[id]" />
           <Stack.Screen name="reunioes/registros" />
+          <Stack.Screen name="reunioes/acesso" />
+          <Stack.Screen name="notificacoes" />
         </Stack.Protected>
       </Stack>
     </>

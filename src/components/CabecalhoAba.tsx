@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { Avatar } from '@/components/Avatar';
+import { SinoNotificacoes } from '@/components/SinoNotificacoes';
 import { ESPACO, TIPOGRAFIA } from '@/constants/theme';
 import { useSessao } from '@/contexts/SessaoContext';
 import { useTema } from '@/contexts/TemaContext';
@@ -28,6 +29,7 @@ export function CabecalhoAba({ titulo, children, acoes }: CabecalhoAbaProps) {
         )}
       </View>
       {acoes}
+      <SinoNotificacoes />
       <Pressable
         onPress={() => router.push('/perfil')}
         accessibilityRole="button"

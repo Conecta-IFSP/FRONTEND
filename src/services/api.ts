@@ -147,7 +147,7 @@ export type Presenca = {
   entrada: string;
   saida?: string;
   situacao: SituacaoPresenca;
-  marcada_por: 'PROPRIO' | 'RESPONSAVEL';
+  marcada_por: 'PROPRIO' | 'RESPONSAVEL' | 'LINK';
 };
 
 export type Participante = {
