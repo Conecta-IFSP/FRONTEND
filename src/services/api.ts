@@ -155,8 +155,22 @@ export type Ata = {
   aprovacoes: string[];
 };
 
+export type Votacao = {
+  _id: string;
+  titulo: string;
+  descricao: string;
+  opcoes: string[];
+  situacao: 'ABERTA' | 'ENCERRADA';
+  aberta_em: string;
+  encerrada_em: string | null;
+  total_votos: number;
+  meu_voto: number | null;
+  resultado: number[] | null;
+};
+
 export type Reuniao = {
   ata?: Ata;
+  votacoes?: Votacao[];
   _id: string;
   comissao_id: { _id: string; nome: string; organizacao_id: string } | null;
   titulo: string;
