@@ -10,6 +10,7 @@ const ABAS = [
   { nome: 'inicio', rotulo: 'Início', icone: 'home-outline', iconeAtivo: 'home' },
   { nome: 'agenda', rotulo: 'Agenda', icone: 'calendar-outline', iconeAtivo: 'calendar' },
   { nome: 'organizacoes', rotulo: 'Organizações', icone: 'business-outline', iconeAtivo: 'business' },
+  { nome: 'relatorio', rotulo: 'Relatório', icone: 'document-text-outline', iconeAtivo: 'document-text' },
 ] as const;
 
 export function BarraAbas({ state, emitter, navigateToTab }: BottomTabBarProps) {

@@ -4,6 +4,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 
 import { Abas } from '@/components/Abas';
+import { AcessoPresidente } from '@/components/AcessoPresidente';
 import { Avatar } from '@/components/Avatar';
 import { Botao } from '@/components/Botao';
 import { Carregando } from '@/components/Carregando';
@@ -443,6 +444,7 @@ export default function TelaReuniao() {
         </Pressable>
       ) : null}
 
+      <AcessoPresidente reuniaoId={reuniao._id} />
       <Abas<Aba>
         abas={[
           { chave: 'presenca', rotulo: 'Presença', contador: dono ? aguardando.length : 0 },

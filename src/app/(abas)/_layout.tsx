@@ -18,6 +18,7 @@ export default function LayoutAbas() {
       <Tabs.Protected guard={usuario?.tipo === 'USUARIO'}>
         <Tabs.Screen name="agenda" />
         <Tabs.Screen name="organizacoes" />
+        <Tabs.Screen name="relatorio" />
         <Tabs.Screen name="organizacao" options={{ href: null }} />
       </Tabs.Protected>
     </Tabs>
