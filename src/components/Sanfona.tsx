@@ -109,7 +109,8 @@ export function Sanfona({
         >
           {passos ? (
             passos.map((passo, indice) => (
-              <View key={passo} style={styles.passo}>
+              // A lista é fixa e pode repetir texto (dois botões com o mesmo nome), então a chave é a posição.
+              <View key={indice} style={styles.passo}>
                 <Text style={[styles.numero, { color: cores.primaria }]}>{indice + 1}.</Text>
                 <Text style={[styles.resposta, styles.textoPasso, { color: cores.textoSuave }]}>{passo}</Text>
               </View>

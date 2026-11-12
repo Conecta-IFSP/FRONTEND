@@ -14,16 +14,13 @@ import type { IoniconsIconName } from '@react-native-vector-icons/ionicons';
  * - `resposta`: um texto, ou uma lista de passos curtos (vira lista numerada).
  *
  * PADRÃO DE ESCRITA
+ * - Cada tópico começa com "O que é…" ou equivalente, seguido de "Como…" e dúvidas comuns.
  * - "Como fazer": lista de passos, no máximo 4, uma ação curta por passo.
- * - "O que é" / "O que acontece": texto com no máximo 2 frases curtas.
+ * - "O que é" / "O que acontece": texto com no máximo 2 ou 3 frases curtas.
  * - Cerca de 5 linhas na tela, no máximo; se passar, divida em duas perguntas.
- * - No máximo 5 perguntas por tópico.
- *
- * TÓPICOS FUTUROS: quando cada funcionalidade estiver disponível no app,
- * acrescente o tópico no ponto marcado no fim de TOPICOS_AJUDA:
- * - Votação: { id: 'votacao', titulo: 'Votação', icone: 'checkbox-outline', perguntas: [...] }
- * - Relatório individual: { id: 'relatorio', titulo: 'Relatório individual', icone: 'bar-chart-outline', perguntas: [...] }
- * Descreva só o que o app realmente faz, com os nomes de botões e telas que aparecem para o usuário.
+ * - No máximo 7 perguntas por tópico; se passar, crie um tópico novo.
+ * - Descreva só o que o app realmente faz, com os nomes de botões e telas que
+ *   aparecem para o usuário. Ao mudar uma regra no app, revise a resposta aqui.
  */
 
 export type PerfilAjuda = 'responsavel' | 'todos';
@@ -64,10 +61,17 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
         pergunta: 'Como crio uma conta?',
         resposta: [
           'Na tela Entrar, toque em Criar conta.',
-          'Preencha nome, e-mail e senha.',
+          'Preencha nome, e-mail, senha e a confirmação da senha.',
           'Toque em Criar conta.',
-          'Digite o código enviado ao seu e-mail.',
+          'Digite o código enviado ao seu e-mail e toque em Continuar.',
         ],
+      },
+      {
+        id: 'conta-google',
+        perfil: 'todos',
+        pergunta: 'Posso entrar com minha conta Google?',
+        resposta:
+          'Sim. Na tela Entrar, toque em Continuar com Google e escolha sua conta. Se for o primeiro acesso, a conta do Conecta+ é criada com o seu nome e e-mail do Google.',
       },
       {
         id: 'conta-esqueci-senha',
@@ -75,10 +79,17 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
         pergunta: 'Esqueci minha senha. O que faço?',
         resposta: [
           'Na tela Entrar, toque em Esqueci minha senha.',
-          'Informe seu e-mail.',
-          'Digite o código recebido.',
-          'Crie a nova senha.',
+          'Informe seu e-mail e toque em Enviar código.',
+          'Digite o código recebido e toque em Continuar.',
+          'Crie a nova senha e toque em Salvar senha.',
         ],
+      },
+      {
+        id: 'conta-google-senha',
+        perfil: 'todos',
+        pergunta: 'Entrei com o Google. Posso criar uma senha?',
+        resposta:
+          'Sim. Na tela Entrar, toque em Esqueci minha senha e siga os passos. Depois disso você pode entrar tanto com o Google quanto com e-mail e senha.',
       },
       {
         id: 'conta-email-senha',
@@ -92,10 +103,11 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
         ],
       },
       {
-        id: 'conta-google-senha',
+        id: 'conta-biometria',
         perfil: 'todos',
-        pergunta: 'Entrei com o Google. Posso criar uma senha?',
-        resposta: 'Sim. Na tela Entrar, toque em Esqueci minha senha e siga os passos para definir sua senha.',
+        pergunta: 'Por que o app pede minha biometria?',
+        resposta:
+          'Para confirmar que é você em ações importantes: marcar entrada e saída, enviar ou aprovar a ata, alterar e-mail ou senha e criar uma nova senha. Se o aparelho não tiver biometria, PIN ou senha de bloqueio, o app não pede a confirmação.',
       },
       {
         id: 'conta-tema-sair',
@@ -116,14 +128,21 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
     icone: 'business-outline',
     perguntas: [
       {
+        id: 'organizacoes-o-que-e',
+        perfil: 'todos',
+        pergunta: 'O que é uma organização?',
+        resposta:
+          'É a instituição onde as comissões funcionam, como uma escola ou um câmpus. Uma organização nova só aparece para os outros depois de aprovada pelo administrador do sistema.',
+      },
+      {
         id: 'organizacoes-participar',
         perfil: 'todos',
         pergunta: 'Como entro em uma organização?',
         resposta: [
-          'Na aba Organizações, toque em +.',
-          'Toque em Entrar com código.',
-          'Digite o código do administrador.',
-          'Toque em Enviar pedido.',
+          'Peça o código de acesso a um administrador da organização.',
+          'Na aba Organizações, toque em + e depois em Entrar com código.',
+          'Digite o código e toque em Enviar pedido.',
+          'Aguarde um administrador aprovar o seu pedido.',
         ],
       },
       {
@@ -140,7 +159,7 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
           'Na aba Organizações, toque em +.',
           'Toque em Criar organização.',
           'Preencha nome e cidade.',
-          'Toque em Enviar solicitação.',
+          'Toque em Enviar solicitação e aguarde a aprovação.',
         ],
       },
       {
@@ -148,14 +167,14 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
         perfil: 'todos',
         pergunta: 'O que é uma comissão?',
         resposta:
-          'É um grupo de pessoas de uma organização que se reúne para tratar de um assunto. O administrador da organização cria a comissão e escolhe o Responsável.',
+          'É um grupo de pessoas de uma organização que se reúne para tratar de um assunto. O administrador da organização cria a comissão, na aba Comissões, e escolhe o Responsável.',
       },
       {
         id: 'organizacoes-papeis',
         perfil: 'todos',
         pergunta: 'Qual a diferença entre Responsável e Membro?',
         resposta:
-          'O Responsável agenda as reuniões, confirma as presenças e escreve a ata. O Membro responde aos convites, marca presença e aprova a ata.',
+          'O Responsável preside a comissão: agenda as reuniões, confirma as presenças, abre as votações e escreve a ata. O Membro responde aos convites, marca presença, vota e aprova ou reprova a ata.',
       },
     ],
   },
@@ -169,31 +188,81 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
         perfil: 'responsavel',
         pergunta: 'Como agendo uma reunião?',
         resposta: [
-          'Na comissão, toque em Nova reunião.',
+          'Na comissão ou na Agenda, toque em Nova reunião.',
           'Preencha título, data e horário.',
           'Em Convidados, escolha quem participa.',
           'Toque em Agendar reunião.',
         ],
       },
       {
+        id: 'reunioes-editar-cancelar',
+        perfil: 'responsavel',
+        pergunta: 'Como edito ou cancelo uma reunião?',
+        resposta: [
+          'Abra a reunião antes do término.',
+          'Toque em Mais opções (⋮), no topo da tela.',
+          'Toque em Editar reunião ou em Cancelar reunião.',
+          'Se mudar a data ou o horário, os convidados precisam responder de novo.',
+        ],
+      },
+      {
+        id: 'reunioes-anexos',
+        perfil: 'responsavel',
+        pergunta: 'Como coloco a pauta e os anexos?',
+        resposta:
+          'Ao agendar ou editar a reunião, preencha Pauta e toque em Anexos. Na reunião, eles aparecem na aba Pauta. São aceitos PDF, imagens, textos e documentos do Office, até 10 arquivos de 10 MB.',
+      },
+      {
         id: 'reunioes-convite',
         perfil: 'todos',
         pergunta: 'Como respondo a um convite de reunião?',
         resposta: [
-          'Na tela Início, vá até Convites.',
+          'Na tela Início, toque em Convites, ou abra a reunião.',
           'Toque em Aceitar ou Recusar.',
           'Se o horário mudar, responda de novo.',
         ],
       },
       {
+        id: 'reunioes-desistir',
+        perfil: 'todos',
+        pergunta: 'Aceitei o convite, mas não poderei ir. E agora?',
+        resposta:
+          'Abra a reunião e toque em Não vou mais. Isso só é possível antes de você marcar a entrada.',
+      },
+      {
+        id: 'reunioes-notificacoes',
+        perfil: 'todos',
+        pergunta: 'Onde vejo os avisos das reuniões?',
+        resposta:
+          'Toque no sino, no topo da tela. Ali aparecem convites, mudanças de horário, cancelamentos, links de presença e atas para avaliar. Toque em Abrir para ir direto ao assunto.',
+      },
+    ],
+  },
+  {
+    id: 'presenca',
+    titulo: 'Presença',
+    icone: 'checkmark-done-outline',
+    perguntas: [
+      {
         id: 'reunioes-presenca',
         perfil: 'todos',
         pergunta: 'Como registro minha presença?',
         resposta: [
-          'Abra a reunião no horário marcado.',
-          'Toque em Marcar entrada.',
+          'No horário da reunião, toque em Marcar entrada, na tela Início ou na reunião.',
+          'Confirme a biometria, se solicitada.',
           'Ao sair, toque em Marcar saída.',
-          'Aguarde o Responsável confirmar.',
+          'Aguarde o Responsável confirmar sua presença.',
+        ],
+      },
+      {
+        id: 'presenca-link',
+        perfil: 'todos',
+        pergunta: 'Recebi um link de presença. Como uso?',
+        resposta: [
+          'Aceite o convite da reunião, se ainda não aceitou.',
+          'Abra o link, entre com a sua conta e toque em Confirmar entrada.',
+          'Ao sair, abra o link de novo e toque em Confirmar saída.',
+          'Pelo link, a presença já fica confirmada, sem esperar o Responsável.',
         ],
       },
       {
@@ -202,8 +271,30 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
         pergunta: 'Como confirmo as presenças?',
         resposta: [
           'Na reunião, abra a aba Presença.',
-          'Em Aguardando confirmação, confirme ou recuse cada pessoa.',
+          'Em Aguardando confirmação, toque em ✓ para confirmar ou em ✕ para recusar.',
           'Se alguém não marcou entrada, toque em Marcar presente.',
+        ],
+      },
+      {
+        id: 'presenca-gerar-link',
+        perfil: 'responsavel',
+        pergunta: 'Como gero um link de presença?',
+        resposta: [
+          'Na reunião, toque em Link e gestão de presença.',
+          'Toque em Gerar link de presença.',
+          'Toque em Copiar link, Notificar convidados no aplicativo ou Enviar e-mail aos convidados.',
+          'Para invalidar o link, toque em Revogar link.',
+        ],
+      },
+      {
+        id: 'presenca-corrigir',
+        perfil: 'responsavel',
+        pergunta: 'Como corrijo o horário de entrada ou saída de alguém?',
+        resposta: [
+          'Na reunião, toque em Link e gestão de presença.',
+          'Em Corrigir entrada e saída, escolha a pessoa.',
+          'Ajuste os horários e toque em Salvar correção.',
+          'Depois que a ata é enviada, as presenças não mudam mais.',
         ],
       },
       {
@@ -229,11 +320,18 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
         perfil: 'responsavel',
         pergunta: 'Como escrevo e envio a ata?',
         resposta: [
-          'Após o término, abra o cartão Ata.',
+          'Após o término, abra a reunião e toque no cartão Ata.',
           'Escreva o texto e toque em Salvar.',
           'Toque em Enviar.',
           'Escolha o prazo e toque em Enviar.',
         ],
+      },
+      {
+        id: 'ata-quem-aprova',
+        perfil: 'todos',
+        pergunta: 'Quem precisa aprovar a ata?',
+        resposta:
+          'Todas as pessoas com presença confirmada na reunião. A ata só é aprovada quando todas aprovam. Se o Responsável esteve presente, o envio já conta como a aprovação dele.',
       },
       {
         id: 'ata-aprovar',
@@ -252,10 +350,17 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
         pergunta: 'Como reprovo uma ata?',
         resposta: [
           'Na tela Início, abra a ata em Atas.',
-          'Toque em Reprovar.',
-          'Se quiser, escreva a justificativa.',
+          'Se quiser, toque no parágrafo com problema para apontá-lo.',
+          'Toque em Reprovar e, se quiser, escreva a justificativa.',
           'Toque em Reprovar ata.',
         ],
+      },
+      {
+        id: 'ata-prazo',
+        perfil: 'todos',
+        pergunta: 'O que é o prazo da ata?',
+        resposta:
+          'Ao enviar, o Responsável escolhe 24 horas, 3 dias ou 7 dias. A data aparece na ata como "Responder até". Depois dela, a ata continua esperando quem ainda não respondeu.',
       },
       {
         id: 'ata-aprovada',
@@ -269,9 +374,125 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
         perfil: 'responsavel',
         pergunta: 'O que acontece quando uma ata é reprovada?',
         resposta:
-          'A ata volta para você, e os demais não precisam mais responder. Toque em Corrigir em nova versão, ajuste o texto e envie de novo.',
+          'A ata volta para você, e os demais não precisam mais responder. Toque em Corrigir em nova versão, ajuste o texto e envie de novo. A versão reprovada fica no histórico.',
       },
     ],
   },
-  // Novos tópicos (Votação, Relatório individual) entram aqui, seguindo o mesmo formato.
+  {
+    id: 'votacao',
+    titulo: 'Votação',
+    icone: 'checkbox-outline',
+    perguntas: [
+      {
+        id: 'votacao-o-que-e',
+        perfil: 'todos',
+        pergunta: 'O que é a votação?',
+        resposta:
+          'É uma decisão tomada durante a reunião. O Responsável abre a votação com um assunto e as opções, e cada participante presente vota uma vez.',
+      },
+      {
+        id: 'votacao-abrir',
+        perfil: 'responsavel',
+        pergunta: 'Como abro uma votação?',
+        resposta: [
+          'Durante a reunião, abra a aba Votações.',
+          'Toque em Abrir votação.',
+          'Escreva o assunto e ajuste as opções (Sim, Não e Abstenção já vêm prontas).',
+          'No fim do formulário, toque em Abrir votação para liberar o voto.',
+        ],
+      },
+      {
+        id: 'votacao-votar',
+        perfil: 'todos',
+        pergunta: 'Como voto?',
+        resposta: [
+          'Marque sua entrada na reunião.',
+          'Abra a aba Votações.',
+          'Toque na opção escolhida.',
+          'Toque em Votar para confirmar.',
+        ],
+      },
+      {
+        id: 'votacao-nao-consigo',
+        perfil: 'todos',
+        pergunta: 'Por que não consigo votar?',
+        resposta:
+          'Só vota quem marcou entrada e ainda não marcou saída. Também não é possível votar se a sua entrada foi recusada, se a votação foi encerrada ou se a reunião terminou.',
+      },
+      {
+        id: 'votacao-alterar',
+        perfil: 'todos',
+        pergunta: 'Posso mudar meu voto?',
+        resposta: 'Não. Cada pessoa vota uma única vez, e o voto não pode ser alterado depois de confirmado.',
+      },
+      {
+        id: 'votacao-resultado',
+        perfil: 'todos',
+        pergunta: 'Quando vejo o resultado?',
+        resposta:
+          'Quando a votação é encerrada: o Responsável toca em Encerrar votação ou ela se encerra sozinha no término da reunião. O resultado mostra a quantidade e a porcentagem de votos de cada opção.',
+      },
+      {
+        id: 'votacao-sigilo',
+        perfil: 'todos',
+        pergunta: 'Os outros veem em quem eu votei?',
+        resposta:
+          'Não. O resultado mostra só o total de cada opção. Apenas você vê o seu voto, marcado como "seu voto".',
+      },
+    ],
+  },
+  {
+    id: 'relatorio',
+    titulo: 'Relatório individual',
+    icone: 'bar-chart-outline',
+    perguntas: [
+      {
+        id: 'relatorio-o-que-e',
+        perfil: 'todos',
+        pergunta: 'O que é o relatório individual?',
+        resposta:
+          'É a lista das reuniões em que você esteve presente, com organização, comissão, data e tempo de participação. No topo aparecem o total de reuniões e as horas registradas.',
+      },
+      {
+        id: 'relatorio-filtrar',
+        perfil: 'todos',
+        pergunta: 'Como escolho o período?',
+        resposta: [
+          'Abra a aba Relatório.',
+          'Escolha Todo período, Este mês ou Este ano.',
+          'Para buscar dados novos, toque em Atualizar relatório.',
+        ],
+      },
+      {
+        id: 'relatorio-exportar',
+        perfil: 'todos',
+        pergunta: 'Como exporto o relatório?',
+        resposta: [
+          'Abra a aba Relatório e escolha o período.',
+          'Toque em Exportar PDF ou Exportar CSV.',
+          'Escolha onde salvar ou com quem compartilhar.',
+        ],
+      },
+      {
+        id: 'relatorio-faltando',
+        perfil: 'todos',
+        pergunta: 'Por que uma reunião não aparece?',
+        resposta:
+          'Entram só as reuniões em que a sua presença foi confirmada. Reuniões canceladas, que ainda não começaram ou fora do período escolhido não aparecem.',
+      },
+      {
+        id: 'relatorio-duracao',
+        perfil: 'todos',
+        pergunta: 'Por que aparece "Duração não calculada"?',
+        resposta:
+          'O tempo é calculado entre a sua entrada e a sua saída. Se a saída não foi marcada, a reunião aparece no relatório, mas sem duração.',
+      },
+      {
+        id: 'relatorio-privacidade',
+        perfil: 'todos',
+        pergunta: 'Outras pessoas podem ver o meu relatório?',
+        resposta: 'Não. Cada pessoa vê apenas o próprio relatório.',
+      },
+    ],
+  },
 ];

@@ -6,7 +6,7 @@
  */
 
 export const DESCRICAO_APP =
-  'O Conecta+ reúne organizações, comissões e reuniões em um só lugar: agende encontros, registre a presença dos participantes e conduza a ata até a aprovação.';
+  'O Conecta+ reúne organizações, comissões e reuniões em um só lugar: agende encontros, registre a presença, abra votações, conduza a ata até a aprovação e acompanhe sua participação no relatório individual.';
 
 export const PROJETO_ACADEMICO =
   'Desenvolvido por estudantes de Análise e Desenvolvimento de Sistemas do IFSP – Câmpus Barretos.';
