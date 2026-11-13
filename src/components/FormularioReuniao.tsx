@@ -539,7 +539,7 @@ const styles = StyleSheet.create({
   horario: { flex: 1, minWidth: 0 },
   contagem: { fontFamily: FONTES.corpo, fontSize: 13, lineHeight: 18 },
   pauta: { minHeight: 180 },
-  textoItem: { flex: 1, fontFamily: FONTES.corpo, fontSize: 15, lineHeight: 22 },
+  textoItem: { fontFamily: FONTES.corpo, fontSize: 15, lineHeight: 22 },
   convidados: {
     minHeight: 64,
     flexDirection: 'row',
