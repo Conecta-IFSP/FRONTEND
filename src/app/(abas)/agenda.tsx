@@ -294,6 +294,7 @@ export default function TelaAgenda() {
         <BotaoFlutuante
           icone="add"
           rotulo="Nova reunião"
+          areaSegura={false}
           aoTocar={() => router.push({ pathname: '/reunioes/nova', params: { data: chaveDia(selecionado) } })}
         />
       ) : null}
