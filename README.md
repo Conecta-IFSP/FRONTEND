@@ -60,6 +60,10 @@ npm run typecheck
 npm run lint
 ```
 
+O `npm run typecheck` gera antes o arquivo `.expo/types/router.d.ts`, com as rotas tipadas do
+expo-router (`npm run tipos-rotas` faz só isso). Esse arquivo não entra no Git: sem gerá-lo,
+o TypeScript acusa que telas existentes, como `/notificacoes`, "não existem".
+
 ## Projeto acadêmico
 
 Projeto desenvolvido no **Instituto Federal de São Paulo — IFSP**.
