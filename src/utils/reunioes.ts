@@ -193,10 +193,13 @@ export function numeroDaAta(ata: Ata | undefined) {
   return ata?.numero && ata.ano ? `Ata nº ${ata.numero}/${ata.ano}` : 'Ata';
 }
 
-export function formatarDataHora(valor: string | Date) {
+export function formatarDiaMesAno(valor: string | Date) {
   const data = new Date(valor);
-  const dia = `${String(data.getDate()).padStart(2, '0')}/${String(data.getMonth() + 1).padStart(2, '0')}`;
-  return `${dia}/${data.getFullYear()} às ${formatarHora(data)}`;
+  return `${String(data.getDate()).padStart(2, '0')}/${String(data.getMonth() + 1).padStart(2, '0')}/${data.getFullYear()}`;
+}
+
+export function formatarDataHora(valor: string | Date) {
+  return `${formatarDiaMesAno(valor)} às ${formatarHora(valor)}`;
 }
 
 export function plural(quantidade: number, singular: string, varios: string) {

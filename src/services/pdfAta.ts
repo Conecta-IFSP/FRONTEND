@@ -4,7 +4,7 @@ import * as Sharing from 'expo-sharing';
 import { File, Paths } from 'expo-file-system';
 
 import type { Reuniao } from '@/services/api';
-import { formatarData, formatarDataHora, intervalo, numeroDaAta } from '@/utils/reunioes';
+import { formatarDiaMesAno, numeroDaAta } from '@/utils/reunioes';
 import { paragrafos } from '@/utils/diferenca';
 
 // Folha A4 em pontos (72 por polegada).
@@ -18,26 +18,27 @@ function escapar(texto: string) {
     .replace(/"/g, '&quot;');
 }
 
+function lista(nomes: string[]) {
+  if (nomes.length < 2) return nomes.join('');
+  return `${nomes.slice(0, -1).join(', ')} e ${nomes[nomes.length - 1]}`;
+}
+
 function htmlDaAta(reuniao: Reuniao) {
   const ata = reuniao.ata!;
   const nomeDe = (id: string) =>
     reuniao.participantes.find((participante) => participante.usuario_id?._id === id)?.usuario_id?.nome ?? 'Participante';
-  const cabecalho = [
-    reuniao.comissao_id?.nome,
-    reuniao.titulo,
-    `${formatarData(reuniao.inicio)} de ${new Date(reuniao.inicio).getFullYear()}, ${intervalo(reuniao)}`,
-    reuniao.local,
-  ]
+  const cabecalho = [reuniao.comissao_id?.nome, reuniao.titulo]
     .filter(Boolean)
     .map((parte) => escapar(parte!))
     .join(' · ');
   const texto = paragrafos(ata.conteudo)
     .map((paragrafo) => `<p>${escapar(paragrafo)}</p>`)
     .join('');
-  const aprovacoes = ata.avaliacoes
+  const nomes = ata.avaliacoes
     .filter((avaliacao) => avaliacao.decisao === 'APROVADA')
-    .map((avaliacao) => `<li>${escapar(nomeDe(avaliacao.usuario_id))}, em ${formatarDataHora(avaliacao.em)}</li>`)
-    .join('');
+    .map((avaliacao) => escapar(nomeDe(avaliacao.usuario_id)));
+  const quando = ata.aprovada_em ? ` em ${formatarDiaMesAno(ata.aprovada_em)}` : '';
+  const assinatura = nomes.length ? `Aprovada por ${lista(nomes)}${quando}.` : '';
 
   return `<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8">
@@ -47,16 +48,13 @@ function htmlDaAta(reuniao: Reuniao) {
   h1 { font-size: 16pt; text-align: center; margin: 0; }
   .cabecalho { text-align: center; color: #4E5A78; font-size: 10pt; margin: 6px 0 24px; }
   p { margin: 0 0 10px; text-align: justify; }
-  .aprovacoes { margin-top: 28px; padding-top: 12px; border-top: 1px solid #C9CFDD; font-size: 10pt; }
-  .aprovacoes ul { margin: 6px 0 0; padding-left: 18px; }
-  .rodape { margin-top: 16px; font-size: 9pt; color: #4E5A78; }
+  .assinatura { margin-top: 28px; padding-top: 12px; border-top: 1px solid #C9CFDD; font-size: 10pt; color: #4E5A78; }
 </style></head>
 <body>
   <h1>${escapar(numeroDaAta(ata))}</h1>
   <div class="cabecalho">${cabecalho}</div>
   ${texto}
-  <div class="aprovacoes"><strong>Aprovada eletronicamente por</strong><ul>${aprovacoes}</ul></div>
-  <div class="rodape">Gerado pelo Conecta+ em ${formatarDataHora(new Date())}</div>
+  ${assinatura ? `<div class="assinatura">${assinatura}</div>` : ''}
 </body></html>`;
 }
 
