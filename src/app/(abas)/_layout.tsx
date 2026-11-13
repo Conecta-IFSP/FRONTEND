@@ -19,7 +19,7 @@ export default function LayoutAbas() {
         <Tabs.Screen name="agenda" />
         <Tabs.Screen name="organizacoes" />
         <Tabs.Screen name="relatorio" />
-        <Tabs.Screen name="organizacao" options={{ href: null }} />
+        <Tabs.Screen name="organizacao" />
       </Tabs.Protected>
     </Tabs>
   );
