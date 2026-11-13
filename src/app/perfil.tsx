@@ -9,10 +9,9 @@ import { Botao } from '@/components/Botao';
 import { CampoTextoControlado } from '@/components/CampoTexto';
 import { Carregando } from '@/components/Carregando';
 import { Confirmacao } from '@/components/Confirmacao';
-import { ControleSegmentado } from '@/components/ControleSegmentado';
 import { FaixaAviso, type Aviso } from '@/components/FaixaAviso';
-import { FolhaInferior } from '@/components/FolhaInferior';
-import { LinhaLista, LinhaListaFixa, SecaoLista } from '@/components/ListaAgrupada';
+import { FolhaInferior, OpcaoFolha } from '@/components/FolhaInferior';
+import { LinhaLista, SecaoLista } from '@/components/ListaAgrupada';
 import { TelaComCabecalho } from '@/components/TelaComCabecalho';
 import { ESPACO, FONTES, RAIO, TIPOGRAFIA } from '@/constants/theme';
 import { ehPreferenciaTema, useTema, type PreferenciaTema } from '@/contexts/TemaContext';
@@ -50,6 +49,7 @@ export default function TelaPerfil() {
   const [carregando, definirCarregando] = useState(true);
   const [abrindo, definirAbrindo] = useState(false);
   const [editandoNome, definirEditandoNome] = useState(false);
+  const [escolhendoTema, definirEscolhendoTema] = useState(false);
   const [confirmandoSaida, definirConfirmandoSaida] = useState(false);
   const [saindo, definirSaindo] = useState(false);
 
@@ -185,6 +185,20 @@ export default function TelaPerfil() {
               />
             </View>
           </FolhaInferior>
+          <FolhaInferior visivel={escolhendoTema} titulo="Tema" aoFechar={() => definirEscolhendoTema(false)}>
+            {OPCOES_TEMA.map((opcao) => (
+              <OpcaoFolha
+                key={opcao.valor}
+                icone={opcao.valor === preferenciaSelecionada ? 'checkmark-circle' : 'ellipse-outline'}
+                rotulo={opcao.titulo}
+                desabilitado={salvandoTema}
+                aoTocar={() => {
+                  definirEscolhendoTema(false);
+                  void selecionarTema(opcao.valor);
+                }}
+              />
+            ))}
+          </FolhaInferior>
           <Confirmacao
             titulo="Sair da conta"
             mensagem={confirmandoSaida ? 'Deseja realmente sair da sua conta?' : undefined}
@@ -234,18 +248,12 @@ export default function TelaPerfil() {
           </SecaoLista>
 
           <SecaoLista titulo="Preferências">
-            <LinhaListaFixa
+            <LinhaLista
               icone="contrast-outline"
               titulo="Tema"
-              direita={
-                <ControleSegmentado
-                  opcoes={OPCOES_TEMA}
-                  valor={preferenciaSelecionada}
-                  aoMudar={(valor) => void selecionarTema(valor)}
-                  rotuloAcessivel="Tema"
-                  desabilitado={salvandoTema}
-                />
-              }
+              subtitulo={OPCOES_TEMA.find((opcao) => opcao.valor === preferenciaSelecionada)?.titulo}
+              desabilitado={salvandoTema}
+              aoTocar={() => definirEscolhendoTema(true)}
             />
           </SecaoLista>
         </>
