@@ -1,7 +1,5 @@
 import { Platform } from 'react-native';
 import * as Print from 'expo-print';
-import * as Sharing from 'expo-sharing';
-import { File, Paths } from 'expo-file-system';
 
 import type { Reuniao } from '@/services/api';
 import { formatarDiaMesAno, numeroDaAta } from '@/utils/reunioes';
@@ -42,6 +40,7 @@ function htmlDaAta(reuniao: Reuniao) {
 
   return `<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8">
+<title>${escapar(numeroDaAta(ata))}</title>
 <style>
   @page { margin: 48px; }
   body { font-family: -apple-system, Roboto, Arial, sans-serif; color: #14182B; font-size: 12pt; line-height: 1.5; }
@@ -58,17 +57,18 @@ function htmlDaAta(reuniao: Reuniao) {
 </body></html>`;
 }
 
-export async function compartilharPdfAta(reuniao: Reuniao) {
+function imprimirNaWeb(html: string) {
+  const janela = window.open('', '_blank');
+  if (!janela) throw new Error('Janela bloqueada.');
+  janela.document.open();
+  janela.document.write(html);
+  janela.document.close();
+  janela.focus();
+  janela.print();
+}
+
+export async function imprimirAta(reuniao: Reuniao) {
   const html = htmlDaAta(reuniao);
-  if (Platform.OS === 'web') {
-    await Print.printAsync({ html });
-    return;
-  }
-  const { uri } = await Print.printToFileAsync({ html, ...A4 });
-  const ata = reuniao.ata!;
-  const nome = ata.numero && ata.ano ? `ata-${ata.numero}-${ata.ano}.pdf` : 'ata.pdf';
-  const destino = new File(Paths.cache, nome);
-  if (destino.exists) destino.delete();
-  new File(uri).move(destino);
-  await Sharing.shareAsync(destino.uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf', dialogTitle: nome });
+  if (Platform.OS === 'web') return imprimirNaWeb(html);
+  await Print.printAsync({ html, ...A4 });
 }

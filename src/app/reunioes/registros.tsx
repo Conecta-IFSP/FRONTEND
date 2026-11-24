@@ -21,7 +21,7 @@ import { useSessao } from '@/contexts/SessaoContext';
 import { useTema } from '@/contexts/TemaContext';
 import { api, type Ata, type AvaliacaoAta, type Comissao, type Reuniao } from '@/services/api';
 import { autenticarComDispositivo, dispositivoProtegido } from '@/services/autenticacao-local';
-import { compartilharPdfAta } from '@/services/pdfAta';
+import { imprimirAta } from '@/services/pdfAta';
 import { type Mudanca, mudancas, paragrafos } from '@/utils/diferenca';
 import {
   formatarData,
@@ -362,7 +362,7 @@ export default function TelaRegistrosReuniao() {
     definirGerandoPdf(true);
     definirErro('');
     try {
-      await compartilharPdfAta(reuniao);
+      await imprimirAta(reuniao);
     } catch {
       definirErro('Não foi possível gerar o PDF da ata.');
     } finally {
