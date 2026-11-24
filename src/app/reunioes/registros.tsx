@@ -166,6 +166,7 @@ export default function TelaRegistrosReuniao() {
   const [justificativa, definirJustificativa] = useState('');
   const [trecho, definirTrecho] = useState<string | null>(null);
   const [gerandoPdf, definirGerandoPdf] = useState(false);
+  const [versaoAberta, definirVersaoAberta] = useState<number | null>(null);
   const ocupado = useRef(false);
   const { control, handleSubmit, reset, formState } = useForm({ defaultValues: { conteudo: '' } });
   const conteudo = useWatch({ control, name: 'conteudo' });
@@ -260,6 +261,8 @@ export default function TelaRegistrosReuniao() {
   const ata = reuniao?.ata;
   const canceladas = reuniao?.atas_canceladas ?? [];
   const anterior = canceladas.at(-1);
+  const versaoVista = versaoAberta === null ? undefined : canceladas[versaoAberta];
+  const reprovacaoVista = reprovacaoDe(versaoVista);
   const textoAnterior = anterior?.conteudo;
   const versaoAtual = canceladas.length + 1;
   const situacao = situacaoDaAta(ata);
@@ -584,21 +587,31 @@ export default function TelaRegistrosReuniao() {
                     {canceladas.map((cancelada, indice) => {
                       const motivo = reprovacaoDe(cancelada);
                       return (
-                        <View
+                        <Pressable
                           key={indice}
-                          style={[styles.versao, indice > 0 ? { borderTopWidth: 1, borderTopColor: cores.bordaSuave } : null]}
+                          onPress={() => definirVersaoAberta(indice)}
+                          accessibilityRole="button"
+                          accessibilityHint="Mostra o texto desta versão"
+                          style={({ pressed }) => [
+                            styles.versao,
+                            indice > 0 ? { borderTopWidth: 1, borderTopColor: cores.bordaSuave } : null,
+                            { opacity: pressed ? 0.7 : 1 },
+                          ]}
                         >
-                          <Text style={[styles.nome, { color: cores.texto }]}>
-                            Versão {indice + 1} · cancelada
-                            {cancelada.cancelada_em ? ` em ${formatarDataHora(cancelada.cancelada_em)}` : ''}
-                          </Text>
-                          {motivo ? (
-                            <Text style={[styles.detalhe, { color: cores.textoSuave }]}>
-                              Reprovada por {nomeDe(motivo.usuario_id)}
-                              {motivo.justificativa ? `: "${motivo.justificativa}"` : ', sem justificativa'}
+                          <View style={styles.textosVersao}>
+                            <Text style={[styles.nome, { color: cores.texto }]}>
+                              Versão {indice + 1} · cancelada
+                              {cancelada.cancelada_em ? ` em ${formatarDataHora(cancelada.cancelada_em)}` : ''}
                             </Text>
-                          ) : null}
-                        </View>
+                            {motivo ? (
+                              <Text style={[styles.detalhe, { color: cores.textoSuave }]}>
+                                Reprovada por {nomeDe(motivo.usuario_id)}
+                                {motivo.justificativa ? `: "${motivo.justificativa}"` : ', sem justificativa'}
+                              </Text>
+                            ) : null}
+                          </View>
+                          <Ionicons name="chevron-forward" size={18} color={cores.textoSuave} />
+                        </Pressable>
                       );
                     })}
                   </View>
@@ -729,6 +742,19 @@ export default function TelaRegistrosReuniao() {
         </View>
       </FolhaInferior>
 
+      <FolhaInferior
+        visivel={Boolean(versaoVista)}
+        titulo={`Versão ${(versaoAberta ?? 0) + 1}`}
+        aoFechar={() => definirVersaoAberta(null)}
+      >
+        {versaoVista ? (
+          <View style={styles.folha}>
+            {reprovacaoVista ? avisoDeReprovacao(reprovacaoVista) : null}
+            <TextoAta texto={versaoVista.conteudo} marcado={reprovacaoVista?.trecho} />
+          </View>
+        ) : null}
+      </FolhaInferior>
+
       <Confirmacao
         mensagem={confirmacao?.mensagem}
         rotuloConfirmar={confirmacao?.rotulo}
@@ -763,7 +789,14 @@ const styles = StyleSheet.create({
     paddingLeft: ESPACO.md - 2,
     paddingRight: ESPACO.sm + 2,
   },
-  versao: { paddingVertical: ESPACO.sm + 2, paddingHorizontal: ESPACO.md - 2, gap: 2 },
+  versao: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ESPACO.sm,
+    paddingVertical: ESPACO.sm + 2,
+    paddingHorizontal: ESPACO.md - 2,
+  },
+  textosVersao: { flex: 1, minWidth: 0, gap: 2 },
   textos: { flex: 1, minWidth: 0 },
   nome: { fontFamily: FONTES.corpoMedio, fontSize: 15, lineHeight: 22 },
   botoes: { flexDirection: 'row', gap: ESPACO.sm },
