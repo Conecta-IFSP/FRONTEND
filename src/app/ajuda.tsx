@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Linking, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller';
@@ -9,7 +9,7 @@ import { CampoTexto } from '@/components/CampoTexto';
 import { EstadoVazio } from '@/components/EstadoVazio';
 import { Sanfona } from '@/components/Sanfona';
 import { TelaComCabecalho } from '@/components/TelaComCabecalho';
-import { SELO_PERFIL, TOPICOS_AJUDA, URL_MANUAL_PDF } from '@/constants/ajuda';
+import { SELO_PERFIL, TOPICOS_AJUDA } from '@/constants/ajuda';
 import { ESPACO, FONTES, RAIO, TIPOGRAFIA } from '@/constants/theme';
 import { useSessao } from '@/contexts/SessaoContext';
 import { useTema } from '@/contexts/TemaContext';
@@ -140,15 +140,13 @@ export default function TelaAjuda() {
         </View>
       ))}
 
-      {URL_MANUAL_PDF ? (
-        <Botao
-          titulo="Ver manual completo (PDF)"
-          icone="document-outline"
-          variante="secundario"
-          pilula
-          aoTocar={() => void Linking.openURL(URL_MANUAL_PDF).catch(() => {})}
-        />
-      ) : null}
+      <Botao
+        titulo="Ver manual completo (PDF)"
+        icone="document-outline"
+        variante="secundario"
+        pilula
+        aoTocar={() => router.push('/manual')}
+      />
     </TelaComCabecalho>
   );
 }

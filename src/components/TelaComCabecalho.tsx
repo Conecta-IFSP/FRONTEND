@@ -28,6 +28,11 @@ type TelaComCabecalhoProps = {
   rodape?: ReactNode;
   /** Opcional: permite à tela rolar o conteúdo por código (ex.: Ajuda abrindo num tópico). */
   refRolagem?: Ref<KeyboardAwareScrollViewRef>;
+  /**
+   * false: o conteúdo ocupa o resto da tela sem ScrollView nem margens. Para telas que
+   * rolam por conta própria (ex.: WebView do manual), evitando conflito de rolagem e zoom.
+   */
+  rolagem?: boolean;
 };
 
 export function TelaComCabecalho({
@@ -45,6 +50,7 @@ export function TelaComCabecalho({
   divisor = false,
   rodape,
   refRolagem,
+  rolagem = true,
 }: TelaComCabecalhoProps) {
   const router = useRouter();
   const { tema } = useTema();
@@ -108,27 +114,31 @@ export function TelaComCabecalho({
         {acao}
       </View>
 
-      <KeyboardAwareScrollView
-        ref={refRolagem}
-        style={[styles.tela, { backgroundColor: corFundo }]}
-        contentContainerStyle={styles.conteudo}
-        keyboardShouldPersistTaps="handled"
-        bottomOffset={rodape ? alturaRodape + ESPACO.md : ESPACO.lg}
-        alwaysBounceVertical={Boolean(aoAtualizar)}
-        refreshControl={
-          aoAtualizar ? (
-            <RefreshControl
-              refreshing={atualizando}
-              onRefresh={atualizar}
-              colors={[cores.primaria]}
-              tintColor={cores.primaria}
-              progressBackgroundColor={cores.superficie}
-            />
-          ) : undefined
-        }
-      >
-        {children}
-      </KeyboardAwareScrollView>
+      {rolagem ? (
+        <KeyboardAwareScrollView
+          ref={refRolagem}
+          style={[styles.tela, { backgroundColor: corFundo }]}
+          contentContainerStyle={styles.conteudo}
+          keyboardShouldPersistTaps="handled"
+          bottomOffset={rodape ? alturaRodape + ESPACO.md : ESPACO.lg}
+          alwaysBounceVertical={Boolean(aoAtualizar)}
+          refreshControl={
+            aoAtualizar ? (
+              <RefreshControl
+                refreshing={atualizando}
+                onRefresh={atualizar}
+                colors={[cores.primaria]}
+                tintColor={cores.primaria}
+                progressBackgroundColor={cores.superficie}
+              />
+            ) : undefined
+          }
+        >
+          {children}
+        </KeyboardAwareScrollView>
+      ) : (
+        <View style={[styles.tela, { backgroundColor: corFundo }]}>{children}</View>
+      )}
       {rodape ? (
         <KeyboardStickyView offset={{ closed: 0, opened: margens.bottom }}>
           <View

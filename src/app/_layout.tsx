@@ -64,8 +64,9 @@ function Navegacao() {
         screenOptions={{ headerShown: false, contentStyle: { backgroundColor: tema.cores.fundo } }}
       >
         <Stack.Screen name="index" />
-        {/* Fora dos grupos protegidos: a Ajuda abre com ou sem login. */}
+        {/* Fora dos grupos protegidos: a Ajuda e o manual abrem com ou sem login. */}
         <Stack.Screen name="ajuda" />
+        <Stack.Screen name="manual" />
         <Stack.Screen name="presenca" />
         <Stack.Protected guard={!usuario}>
           <Stack.Screen name="login/index" />

@@ -45,14 +45,6 @@ export const SELO_PERFIL: Record<PerfilAjuda, string | null> = {
   todos: null,
 };
 
-// Manual completo em PDF, versionado no repositório DOCUMENTATION (branch main), em
-// "4 - Incremento3/manual-de-utilizacao/manual-usuario/". Para atualizar, substitua o PDF
-// mantendo o MESMO caminho e nome de arquivo: assim o link não muda e não é preciso
-// publicar uma nova versão do app.
-// Se esta constante ficar vazia, o botão "Ver manual completo (PDF)" some da tela Ajuda.
-export const URL_MANUAL_PDF =
-  'https://github.com/Conecta-IFSP/DOCUMENTATION/blob/main/4%20-%20Incremento3/manual-de-utilizacao/manual-usuario/Manual-do-Usuario-Conecta.pdf';
-
 export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
   {
     id: 'conta',
