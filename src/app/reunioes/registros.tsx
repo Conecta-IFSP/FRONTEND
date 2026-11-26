@@ -335,6 +335,7 @@ export default function TelaRegistrosReuniao() {
 
   async function reprovar() {
     if (!ata) return;
+    if (!(await autenticarComDispositivo())) return;
     const reprovada = await gravar(
       '/ata/reprovar',
       'POST',
@@ -414,7 +415,7 @@ export default function TelaRegistrosReuniao() {
         />
         <Botao
           titulo="Aprovar"
-          icone="finger-print"
+          icone="checkmark"
           pilula
           carregando={salvando}
           aoTocar={() => void aprovar()}
@@ -685,7 +686,7 @@ export default function TelaRegistrosReuniao() {
           </Text>
           {euPresente ? (
             <View style={styles.linhaIcone}>
-              <Ionicons name="finger-print" size={16} color={cores.primaria} />
+              <Ionicons name="checkmark-circle-outline" size={16} color={cores.primaria} />
               <Text style={[styles.detalhe, { color: cores.textoSuave, flex: 1 }]}>
                 Enviar já registra a sua aprovação.
               </Text>
