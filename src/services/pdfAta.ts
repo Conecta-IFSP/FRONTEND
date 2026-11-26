@@ -1,12 +1,7 @@
-import { Platform } from 'react-native';
-import * as Print from 'expo-print';
-
 import type { Reuniao } from '@/services/api';
+import { entregarPdf } from '@/services/pdf';
 import { formatarDiaMesAno, numeroDaAta } from '@/utils/reunioes';
 import { paragrafos } from '@/utils/diferenca';
-
-// Folha A4 em pontos (72 por polegada).
-const A4 = { width: 595, height: 842 };
 
 function escapar(texto: string) {
   return texto
@@ -57,18 +52,6 @@ function htmlDaAta(reuniao: Reuniao) {
 </body></html>`;
 }
 
-function imprimirNaWeb(html: string) {
-  const janela = window.open('', '_blank');
-  if (!janela) throw new Error('Janela bloqueada.');
-  janela.document.open();
-  janela.document.write(html);
-  janela.document.close();
-  janela.focus();
-  janela.print();
-}
-
-export async function imprimirAta(reuniao: Reuniao) {
-  const html = htmlDaAta(reuniao);
-  if (Platform.OS === 'web') return imprimirNaWeb(html);
-  await Print.printAsync({ html, ...A4 });
+export async function gerarPdfAta(reuniao: Reuniao) {
+  return entregarPdf(htmlDaAta(reuniao), numeroDaAta(reuniao.ata!).replace('/', '-'));
 }

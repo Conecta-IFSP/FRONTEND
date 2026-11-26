@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { FlatList, Platform, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { Botao } from '@/components/Botao';
@@ -13,6 +13,7 @@ import { useTema } from '@/contexts/TemaContext';
 import { useSessao } from '@/contexts/SessaoContext';
 import { api } from '@/services/api';
 import { exportarRelatorioIndividual } from '@/services/exportar-relatorio-individual';
+import { pdfPelaImpressao } from '@/services/pdf';
 import type { RelatorioIndividual } from '@/types/relatorio-individual';
 import { consultaRelatorio, dataRelatorio, horasRelatorio, periodoRelatorio, type PeriodoRelatorio } from '@/utils/relatorio-individual';
 
@@ -76,7 +77,7 @@ export default function TelaRelatorioIndividual() {
             <Botao titulo="Exportar PDF" icone="document-text-outline" carregando={exportando === 'pdf'} desabilitado={Boolean(exportando) || !relatorio.reunioes.length} aoTocar={() => void exportar('pdf')} />
             <Botao titulo="Exportar CSV" icone="download-outline" variante="secundario" carregando={exportando === 'csv'} desabilitado={Boolean(exportando) || !relatorio.reunioes.length} aoTocar={() => void exportar('csv')} />
           </View>
-          {Platform.OS === 'web' && <Text style={[styles.legenda, { color: cores.textoSuave }]}>Para PDF, escolha “Salvar como PDF” na janela de impressão.</Text>}
+          {pdfPelaImpressao() && <Text style={[styles.legenda, { color: cores.textoSuave }]}>Para PDF, escolha “Salvar como PDF” na janela de impressão.</Text>}
           <Text style={[styles.legenda, { color: cores.textoSuave }]}>Atualizado em {dataRelatorio(relatorio.gerada_em)}. Reuniões canceladas e presenças pendentes ou recusadas não entram no relatório.</Text>
         </>}
       </View>}
