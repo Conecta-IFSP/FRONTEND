@@ -44,16 +44,21 @@ export function htmlRelatorioIndividual(r: RelatorioIndividual, logo: string = '
     table{width:100%;table-layout:fixed;border-collapse:collapse}td{width:50%;padding:4px 12px 4px 0;vertical-align:top;overflow-wrap:anywhere}
     .rotulo{display:block;font-size:8pt;color:#566174;margin-bottom:1px}.valor{display:block;font-size:10pt}
     footer{font-size:8pt;color:#566174;line-height:1.5;margin-top:10px}footer p{margin:4px 0}
+    @media print{header{padding-bottom:10px;margin-bottom:10px}.logo{width:72px;height:72px}.identificacao,.resumo{margin-bottom:10px}.resumo{padding:6px 0}article{padding-bottom:8px;margin-bottom:10px}td{padding-top:2px;padding-bottom:2px}footer{break-inside:avoid}}
   </style></head><body>
   <header>${marca}<div><h1>Relatório Individual</h1><p>Participação em reuniões</p></div></header>
   <section class="identificacao"><p><strong>Participante:</strong> ${escapar(r.usuario.nome)}</p><p><strong>E-mail:</strong> ${escapar(r.usuario.email)}</p>
   <p><strong>Período:</strong> ${escapar(periodoRelatorio(r))}</p><p><strong>Emitido em:</strong> ${escapar(dataRelatorio(r.gerada_em))}</p></section>
+  <section class="identificacao"><h2>Vínculos atuais</h2><p>Organizações aprovadas e comissões ativas na emissão; independentes do período das reuniões.</p>
+  ${r.vinculos ? `<h2>Organizações</h2>${r.vinculos.organizacoes.map(o => `<p>${escapar(o.nome)} · ${o.papel === 'ADMIN' ? 'Administrador' : 'Membro'}</p>`).join('') || '<p>Nenhum vínculo aprovado em organização aprovada.</p>'}
+  <h2>Comissões</h2>${r.vinculos.comissoes.map(c => `<p>${escapar(c.nome)} · ${escapar(c.organizacao)} · ${c.papel === 'RESPONSAVEL' ? 'Responsável' : 'Membro'}</p>`).join('') || '<p>Nenhuma comissão ativa vinculada.</p>'}` : '<p>Informações de vínculos indisponíveis nesta versão do servidor.</p>'}</section>
   <div class="resumo"><strong>${r.resumo.reunioes} reunião(ões) com presença confirmada</strong> · ${horasRelatorio(r.resumo.minutos_registrados)} de participação registrada</div>
+  ${!r.reunioes.length ? '<p>Nenhuma participação confirmada neste período.</p>' : ''}
   ${r.reunioes.map((p, i) => `<article><h2><span class="numero">${String(i + 1).padStart(2, '0')}.</span>${escapar(p.titulo)}</h2><table><tbody>
     <tr>${campo('Organização', p.organizacao)}${campo('Comissão', p.comissao)}</tr>
     <tr>${campo('Início da reunião', dataRelatorio(p.inicio))}${campo('Término da reunião', dataRelatorio(p.fim))}</tr>
     <tr>${campo('Local', p.local || 'Não informado')}${campo('Modalidade de horário', p.dia_inteiro ? 'Dia inteiro' : 'Horário definido')}</tr>
-    <tr>${campo('Entrada registrada', dataRelatorio(p.entrada))}${campo('Saída registrada', dataRelatorio(p.saida))}</tr>
+    <tr>${campo('Entrada registrada', dataRelatorio(p.entrada))}${campo('Saída registrada', dataRelatorio(p.saida) + (p.saida_automatica ? ' (automática no término previsto)' : ''))}</tr>
     <tr>${campo('Presença', 'Confirmada')}${campo('Duração registrada', p.minutos === null ? 'Não calculada' : horasRelatorio(p.minutos))}</tr>
   </tbody></table></article>`).join('')}
   <footer><p>Conecta+ · Relatório de participação individual.</p>
@@ -75,11 +80,24 @@ export function csvRelatorioIndividual(r: RelatorioIndividual) {
     'Usuário', 'E-mail', 'Gerado em (UTC)', 'Período inicial (UTC)', 'Período final exclusivo (UTC)',
     'Reunião', 'Organização', 'Comissão', 'Local', 'Início (UTC)', 'Término (UTC)', 'Dia inteiro',
     'Entrada (UTC)', 'Saída (UTC)', 'Minutos registrados', 'Situação da presença',
+    'Tipo de registro', 'Papel no vínculo atual',
+    'Origem da saída',
   ]];
   r.reunioes.forEach(p => linhas.push([
     r.usuario.nome, r.usuario.email, r.gerada_em, r.periodo.de, r.periodo.ate,
     p.titulo, p.organizacao, p.comissao, p.local, p.inicio, p.fim, p.dia_inteiro ? 'Sim' : 'Não',
-    p.entrada, p.saida, p.minutos, 'Confirmada',
+    p.entrada, p.saida, p.minutos, 'Confirmada', 'Participação', null,
+    p.saida ? (p.saida_automatica ? 'Automática no término previsto' : 'Registrada') : 'Não registrada',
   ]));
+  const identidade = [r.usuario.nome, r.usuario.email, r.gerada_em, r.periodo.de, r.periodo.ate];
+  for (const o of r.vinculos?.organizacoes ?? []) linhas.push([
+    ...identidade, null, o.nome, null, null, null, null, null, null, null, null, null,
+    'Organização atual', o.papel === 'ADMIN' ? 'Administrador' : 'Membro', null,
+  ]);
+  for (const c of r.vinculos?.comissoes ?? []) linhas.push([
+    ...identidade, null, c.organizacao, c.nome, null, null, null, null, null, null, null, null,
+    'Comissão atual', c.papel === 'RESPONSAVEL' ? 'Responsável' : 'Membro', null,
+  ]);
+  if (linhas.length === 1) linhas.push([...identidade, null, null, null, null, null, null, null, null, null, null, null, 'Sem participação ou vínculo atual informado', null, null]);
   return '\uFEFF' + linhas.map(linha => linha.map(celulaCsv).join(';')).join('\r\n');
 }
