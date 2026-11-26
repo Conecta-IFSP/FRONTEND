@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { KeyboardAwareScrollView, useKeyboardState } from 'react-native-keyboard-controller';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -15,7 +15,6 @@ type FundoGradienteProps = {
 
 export function FundoGradiente({ marca, children, rodape }: FundoGradienteProps) {
   const { primariaSuave, secundariaSuave, fundo } = useTema().tema.cores;
-  const tecladoAberto = useKeyboardState((estado) => estado.isVisible);
 
   return (
     <View style={[styles.flex, { backgroundColor: fundo }]}>
@@ -30,15 +29,14 @@ export function FundoGradiente({ marca, children, rodape }: FundoGradienteProps)
           contentContainerStyle={styles.conteudo}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
-          scrollEnabled={tecladoAberto}
           bounces={false}
           overScrollMode="never"
           bottomOffset={ESPACO.md}
         >
           <View style={styles.marca}>{marca}</View>
           <View style={styles.formulario}>{children}</View>
+          <View style={styles.rodape}>{rodape}</View>
         </KeyboardAwareScrollView>
-        <View style={[styles.rodape, { backgroundColor: fundo }]}>{rodape}</View>
       </SafeAreaView>
     </View>
   );
@@ -56,12 +54,8 @@ const styles = StyleSheet.create({
   marca: { flexGrow: 1, flexShrink: 1, minHeight: 0, alignItems: 'center', justifyContent: 'center', paddingVertical: ESPACO.md },
   formulario: { gap: ESPACO.md },
   rodape: {
-    width: '100%',
-    maxWidth: 480,
-    alignSelf: 'center',
     alignItems: 'center',
     gap: ESPACO.md,
-    paddingHorizontal: ESPACO.lg,
     paddingTop: ESPACO.lg,
     paddingBottom: ESPACO.md,
   },

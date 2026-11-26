@@ -30,7 +30,7 @@ export default function LayoutRaiz() {
   if (!carregadas && !erro) return null;
 
   return (
-    <KeyboardProvider>
+    <KeyboardProvider statusBarTranslucent navigationBarTranslucent preserveEdgeToEdge>
       <TemaProvider>
         <ToastProvider>
           <SessaoProvider><Navegacao /></SessaoProvider>
