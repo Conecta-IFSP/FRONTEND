@@ -146,6 +146,7 @@ export type SituacaoPresenca = 'AGUARDANDO' | 'CONFIRMADA' | 'RECUSADA';
 export type Presenca = {
   entrada: string;
   saida?: string;
+  saida_automatica?: boolean;
   situacao: SituacaoPresenca;
   marcada_por: 'PROPRIO' | 'RESPONSAVEL' | 'LINK';
 };

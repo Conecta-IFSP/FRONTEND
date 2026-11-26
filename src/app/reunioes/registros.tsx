@@ -53,6 +53,7 @@ type Lista = {
     situacao: 'CONFIRMADA' | 'AGUARDANDO' | 'RECUSADA' | 'SEM_REGISTRO';
     entrada: string | null;
     saida: string | null;
+    saida_automatica: boolean;
     minutos: number | null;
   }[];
 };
@@ -70,7 +71,8 @@ function periodo(participante: Lista['participantes'][number]) {
   if (!participante.entrada) return 'Sem registro';
   const entrada = formatarHora(participante.entrada);
   if (!participante.saida) return `Entrada às ${entrada}`;
-  return `${entrada} – ${formatarHora(participante.saida)} · ${participante.minutos ?? 0} min`;
+  const automatica = participante.saida_automatica ? ' (saída automática)' : '';
+  return `${entrada} – ${formatarHora(participante.saida)}${automatica} · ${participante.minutos ?? 0} min`;
 }
 
 function reprovacaoDe(ata: Ata | undefined) {

@@ -245,7 +245,7 @@ export default function TelaReuniao() {
       return `${prefixo}${dono ? 'Presença marcada por você' : 'Presença marcada pelo responsável'}`;
     }
     const entrada = formatarHora(presenca.entrada);
-    if (presenca.saida) return `${prefixo}${entrada} – ${formatarHora(presenca.saida)}`;
+    if (presenca.saida) return `${prefixo}${entrada} – ${formatarHora(presenca.saida)}${presenca.saida_automatica ? ' (saída automática)' : ''}`;
     return `${prefixo}Entrada às ${entrada}${terminou ? ' · sem saída' : ''}`;
   }
 
@@ -262,7 +262,9 @@ export default function TelaReuniao() {
       return { icone: 'location-outline' as const, tom: 'primaria' as const, texto: 'Entrada não marcada' };
     }
     const entrada = formatarHora(presenca.entrada);
-    const periodo = presenca.saida ? `${entrada} – ${formatarHora(presenca.saida)}` : `Entrada às ${entrada}`;
+    const periodo = presenca.saida
+      ? `${entrada} – ${formatarHora(presenca.saida)}${presenca.saida_automatica ? ' (saída automática)' : ''}`
+      : `Entrada às ${entrada}`;
     if (presenca.situacao === 'RECUSADA') {
       return { icone: 'close-circle-outline' as const, tom: 'erro' as const, texto: 'Entrada recusada' };
     }
