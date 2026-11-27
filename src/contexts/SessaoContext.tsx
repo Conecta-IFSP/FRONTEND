@@ -10,7 +10,7 @@ type Sessao = {
   aviso: string;
   atualizar: () => Promise<void>;
   entrar: (token: string) => Promise<boolean>;
-  sair: () => Promise<void>;
+  sair: (aviso?: string) => Promise<void>;
 };
 const Contexto = createContext<Sessao | null>(null);
 
@@ -75,12 +75,12 @@ export function SessaoProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const sair = useCallback(async () => {
+  const sair = useCallback(async (aviso = '') => {
     geracao.current++;
     await removerToken();
     definirUsuario(null);
     definirErro('');
-    definirAviso('');
+    definirAviso(aviso);
   }, []);
 
   return <Contexto.Provider value={{ usuario, carregando, erro, aviso, atualizar, entrar, sair }}>{children}</Contexto.Provider>;
