@@ -11,6 +11,7 @@ type Sessao = {
   atualizar: () => Promise<void>;
   entrar: (token: string) => Promise<boolean>;
   sair: (aviso?: string) => Promise<void>;
+  limparAviso: () => void;
 };
 const Contexto = createContext<Sessao | null>(null);
 
@@ -83,7 +84,9 @@ export function SessaoProvider({ children }: { children: ReactNode }) {
     definirAviso(aviso);
   }, []);
 
-  return <Contexto.Provider value={{ usuario, carregando, erro, aviso, atualizar, entrar, sair }}>{children}</Contexto.Provider>;
+  const limparAviso = useCallback(() => definirAviso(''), []);
+
+  return <Contexto.Provider value={{ usuario, carregando, erro, aviso, atualizar, entrar, sair, limparAviso }}>{children}</Contexto.Provider>;
 }
 
 export function useSessao() {

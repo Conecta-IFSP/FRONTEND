@@ -8,6 +8,7 @@ import { CampoCodigo, CampoTextoControlado } from '@/components/CampoTexto';
 import { FaixaAviso, type Aviso } from '@/components/FaixaAviso';
 import { TelaComCabecalho } from '@/components/TelaComCabecalho';
 import { ESPACO, FONTES, TIPOGRAFIA } from '@/constants/theme';
+import { useSessao } from '@/contexts/SessaoContext';
 import { useTema } from '@/contexts/TemaContext';
 import { api } from '@/services/api';
 import { autenticarComDispositivo } from '@/services/autenticacao-local';
@@ -20,6 +21,7 @@ type SenhaForm = { senha: string; confirmacao: string };
 export default function TelaRecuperarConta() {
   const router = useRouter();
   const { tema } = useTema();
+  const { limparAviso } = useSessao();
   const { control: controleEmail, handleSubmit: enviarFormularioEmail } = useForm<EmailForm>({ defaultValues: { email: '' } });
   const { control: controleSenha, handleSubmit: enviarFormularioSenha, setFocus: focarSenha, formState } = useForm<SenhaForm>({
     defaultValues: { senha: '', confirmacao: '' },
@@ -112,6 +114,7 @@ export default function TelaRecuperarConta() {
       definirAviso({ tom: 'erro', titulo: 'Não foi possível redefinir', mensagem: resultado.erro });
       return;
     }
+    limparAviso();
     definirEtapa('concluido');
   });
 
