@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { useForm, useWatch } from 'react-hook-form';
@@ -22,12 +22,11 @@ import { useTema } from '@/contexts/TemaContext';
 import { api, type Ata, type AvaliacaoAta, type Comissao, type Reuniao } from '@/services/api';
 import { autenticarComDispositivo, dispositivoProtegido } from '@/services/autenticacao-local';
 import { gerarPdfAta } from '@/services/pdfAta';
+import { gerarPdfLista, type ListaPresenca } from '@/services/pdfListaPresenca';
 import { type Mudanca, mudancas, paragrafos } from '@/utils/diferenca';
 import {
-  formatarData,
   formatarDataHora,
   formatarHora,
-  intervalo,
   numeroDaAta,
   plural,
   situacaoDaAta,
@@ -44,19 +43,7 @@ const PRAZOS = [
 
 type Aba = 'ata' | 'presenca';
 
-type Lista = {
-  titulo: string;
-  gerada_em: string;
-  participantes: {
-    usuario_id: string;
-    nome: string;
-    situacao: 'CONFIRMADA' | 'AGUARDANDO' | 'RECUSADA' | 'SEM_REGISTRO';
-    entrada: string | null;
-    saida: string | null;
-    saida_automatica: boolean;
-    minutos: number | null;
-  }[];
-};
+type Lista = ListaPresenca;
 
 type Pendente = { mensagem: string; rotulo: string; acao: () => Promise<void> };
 
@@ -250,14 +237,17 @@ export default function TelaRegistrosReuniao() {
     await recarregar();
   }
 
-  function compartilhar() {
-    if (!lista || !reuniao) return;
-    const linhas = lista.participantes.map(
-      (participante) => `${participante.nome}: ${SITUACOES[participante.situacao].texto} (${periodo(participante)})`,
-    );
-    void Share.share({
-      message: [`Lista de presença · ${reuniao.titulo}`, `${formatarData(reuniao.inicio)} · ${intervalo(reuniao)}`, '', ...linhas].join('\n'),
-    }).catch(() => definirErro('Não foi possível compartilhar.'));
+  async function baixarLista() {
+    if (!reuniao || !lista) return;
+    definirGerandoPdf(true);
+    definirErro('');
+    try {
+      await gerarPdfLista(reuniao, lista);
+    } catch {
+      definirErro('Não foi possível gerar o PDF da lista de presença.');
+    } finally {
+      definirGerandoPdf(false);
+    }
   }
 
   const ata = reuniao?.ata;
@@ -271,8 +261,13 @@ export default function TelaRegistrosReuniao() {
   const encerrada = Boolean(reuniao && reuniao.situacao !== 'CANCELADA' && new Date(reuniao.fim).getTime() <= agora);
   const editavel = responsavel && encerrada && (!ata || ata.situacao === 'RASCUNHO');
   const minhaAvaliacao = ata?.avaliacoes.find((avaliacao) => avaliacao.usuario_id === usuario?._id);
+  const prazoVencido = Boolean(ata?.prazo && new Date(ata.prazo).getTime() <= agora);
   const aprovador = Boolean(
-    usuario && ata?.situacao === 'EM_APROVACAO' && ata.aprovadores.includes(usuario._id) && !minhaAvaliacao,
+    usuario &&
+      ata?.situacao === 'EM_APROVACAO' &&
+      ata.aprovadores.includes(usuario._id) &&
+      !minhaAvaliacao &&
+      !prazoVencido,
   );
   const presentes = (reuniao?.participantes ?? []).filter((participante) => participante.presenca?.situacao === 'CONFIRMADA');
   const euPresente = presentes.some((participante) => participante.usuario_id?._id === usuario?._id);
@@ -284,7 +279,6 @@ export default function TelaRegistrosReuniao() {
     reuniao?.participantes.find((participante) => participante.usuario_id?._id === pessoaId)?.usuario_id?.nome ??
     'Participante';
   const totalPresentes = lista?.participantes.filter((participante) => participante.situacao === 'CONFIRMADA').length ?? 0;
-  const prazoVencido = Boolean(ata?.prazo && new Date(ata.prazo).getTime() < agora);
 
   function detalheDaVersao(atual: Ata) {
     if (atual.situacao === 'RASCUNHO') return `Versão ${versaoAtual} · salva em ${formatarDataHora(atual.atualizada_em)}`;
@@ -440,7 +434,17 @@ export default function TelaRegistrosReuniao() {
       />
     );
   } else if (aba === 'presenca' && lista && lista.participantes.length > 0) {
-    rodape = <Botao titulo="Compartilhar" icone="share-outline" variante="secundario" pilula aoTocar={compartilhar} />;
+    rodape = (
+      <Botao
+        titulo="PDF da lista"
+        tituloCarregando="Gerando PDF..."
+        icone="document-outline"
+        variante="secundario"
+        pilula
+        carregando={gerandoPdf}
+        aoTocar={() => void baixarLista()}
+      />
+    );
   }
 
   return (
@@ -480,10 +484,10 @@ export default function TelaRegistrosReuniao() {
               {ata?.situacao === 'EM_APROVACAO' && ata.prazo ? (
                 <View style={styles.linhaIcone}>
                   <Ionicons name="time-outline" size={16} color={prazoVencido ? cores.erro : cores.textoSuave} />
-                  <Text style={[styles.detalhe, { color: prazoVencido ? cores.erro : cores.textoSuave }]}>
+                  <Text style={[styles.detalhe, { color: prazoVencido ? cores.erro : cores.textoSuave, flex: 1 }]}>
                     {prazoVencido
-                      ? `Prazo encerrado em ${formatarDataHora(ata.prazo)}`
-                      : `Responder até ${formatarDataHora(ata.prazo)}`}
+                      ? `Prazo encerrado em ${formatarDataHora(ata.prazo)}. A ata será aprovada automaticamente.`
+                      : `Responder até ${formatarDataHora(ata.prazo)}. Sem resposta, a aprovação é automática.`}
                   </Text>
                 </View>
               ) : null}
@@ -551,7 +555,9 @@ export default function TelaRegistrosReuniao() {
                     {ata.aprovadores.map((pessoaId, indice) => {
                       const avaliacao = ata.avaliacoes.find((item) => item.usuario_id === pessoaId);
                       const aprovou = avaliacao?.decisao === 'APROVADA';
-                      const detalhe = avaliacao
+                      const detalhe = avaliacao?.automatica
+                        ? `Aprovada pelo fim do prazo em ${formatarDataHora(avaliacao.em)}`
+                        : avaliacao
                         ? `${aprovou ? 'Aprovou' : 'Reprovou'} em ${formatarDataHora(avaliacao.em)}`
                         : ata.situacao === 'EM_APROVACAO'
                           ? 'Aguardando'
@@ -683,8 +689,8 @@ export default function TelaRegistrosReuniao() {
             ))}
           </View>
           <Text style={[styles.detalhe, { color: cores.textoSuave }]}>
-            Até {formatarDataHora(new Date(envioAbertoEm + prazo * HORA))}. Depois do envio o texto não muda; se alguém
-            reprovar, você corrige numa nova versão.
+            Até {formatarDataHora(new Date(envioAbertoEm + prazo * HORA))}. Quem não responder até lá aprova
+            automaticamente. Depois do envio o texto não muda; se alguém reprovar, você corrige numa nova versão.
           </Text>
           {euPresente ? (
             <View style={styles.linhaIcone}>

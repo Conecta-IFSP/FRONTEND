@@ -12,11 +12,12 @@ import { useTema } from '@/contexts/TemaContext';
 import { useToast } from '@/contexts/ToastContext';
 import { api } from '@/services/api';
 import {
+  REGRA_SENHA,
   normalizarEmail,
   validarConfirmacaoSenha,
   validarEmail,
   validarNome,
-  validarSenha,
+  validarNovaSenha,
 } from '@/utils/validacao';
 
 type DadosCadastro = { nome: string; email: string; senha: string; confirmacao: string };
@@ -119,7 +120,8 @@ export default function TelaCadastro() {
       <CampoTextoControlado
         controle={control}
         nome="senha"
-        validar={validarSenha}
+        validar={validarNovaSenha}
+        ajuda={REGRA_SENHA}
         rotulo="Senha"
         placeholder="Senha"
         icone="lock-closed-outline"

@@ -268,7 +268,7 @@ export default function TelaOrganizacoes() {
                           </Text>
                         </View>
                       ) : null}
-                      <View style={styles.linhaPapel}>
+                      <View style={styles.linhaNumeros}>
                         <View
                           style={[
                             styles.papel,
@@ -453,6 +453,7 @@ const styles = StyleSheet.create({
   nome: { fontFamily: FONTES.titulo, fontSize: 15, lineHeight: 22 },
   detalhe: { fontFamily: FONTES.corpo, fontSize: 13, lineHeight: 18 },
   linhaPapel: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  linhaNumeros: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 6, rowGap: 2 },
   papel: { borderRadius: RAIO.circulo, paddingHorizontal: ESPACO.sm, paddingVertical: 1 },
   textoPapel: { fontFamily: FONTES.corpoMedio, fontSize: 11, lineHeight: 16 },
   respostas: { flexDirection: 'row', gap: ESPACO.sm, paddingLeft: 56 },

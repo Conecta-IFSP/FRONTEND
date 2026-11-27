@@ -76,8 +76,8 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
         resposta: [
           'Toque no seu avatar, no topo da tela.',
           'Em Conta, toque em Nome, E-mail ou Senha.',
-          'Confirme a biometria, se solicitada.',
-          'Siga as instruções da tela.',
+          'Confirme a biometria, se solicitada, e siga as instruções da tela.',
+          'Depois de trocar a senha, entre de novo em todos os aparelhos.',
         ],
       },
       {
@@ -267,12 +267,12 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
       {
         id: 'reunioes-lista-presenca',
         perfil: 'todos',
-        pergunta: 'Como compartilho a lista de presença?',
+        pergunta: 'Como gero a lista de presença em PDF?',
         resposta: [
           'Após o término, abra a reunião.',
           'Toque no cartão Ata.',
           'Abra a aba Presença.',
-          'Toque em Compartilhar.',
+          'Toque em PDF da lista e escolha onde salvar ou com quem compartilhar.',
         ],
       },
     ],
@@ -327,7 +327,7 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
         perfil: 'todos',
         pergunta: 'O que é o prazo da ata?',
         resposta:
-          'Ao enviar, o Responsável escolhe 24 horas, 3 dias ou 7 dias. A data aparece na ata como "Responder até". Depois dela, a ata continua esperando quem ainda não respondeu.',
+          'Ao enviar, o Responsável escolhe 24 horas, 3 dias ou 7 dias. A data aparece na ata como "Responder até". Quem não responder até lá aprova automaticamente; se ninguém reprovou, a ata fica aprovada e recebe o número.',
       },
       {
         id: 'ata-aprovada',
@@ -364,7 +364,7 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
         resposta: [
           'Durante a reunião, abra a aba Votações.',
           'Toque em Abrir votação.',
-          'Escreva o assunto e ajuste as opções (Sim, Não e Abstenção já vêm prontas).',
+          'Escreva o assunto, ajuste as opções (Sim, Não e Abstenção já vêm prontas) e escolha o tipo, fechada ou aberta.',
           'No fim do formulário, toque em Abrir votação para liberar o voto.',
         ],
       },
@@ -375,7 +375,7 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
         resposta: [
           'Marque sua entrada na reunião.',
           'Abra a aba Votações.',
-          'Toque na opção escolhida.',
+          'Toque na opção escolhida, em Votar em branco ou em Votar nulo.',
           'Toque em Votar para confirmar.',
         ],
       },
@@ -397,14 +397,14 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
         perfil: 'todos',
         pergunta: 'Quando vejo o resultado?',
         resposta:
-          'Quando a votação é encerrada: o Responsável toca em Encerrar votação ou ela se encerra sozinha no término da reunião. O resultado mostra a quantidade e a porcentagem de votos de cada opção.',
+          'Quando a votação é encerrada: o Responsável toca em Encerrar votação ou ela se encerra sozinha no término da reunião. O resultado mostra a quantidade e a porcentagem de votos de cada opção, dos votos em branco e dos nulos.',
       },
       {
         id: 'votacao-sigilo',
         perfil: 'todos',
         pergunta: 'Os outros veem em quem eu votei?',
         resposta:
-          'Não. O resultado mostra só o total de cada opção. Apenas você vê o seu voto, marcado como "seu voto".',
+          'Depende do tipo, mostrado no cartão da votação. Na votação fechada, não: o resultado mostra só o total de cada opção, e apenas você vê o seu voto, marcado como "seu voto". Na votação aberta, sim: depois do encerramento, todos veem a lista de quem votou em quê.',
       },
     ],
   },
@@ -418,7 +418,7 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
         perfil: 'todos',
         pergunta: 'O que é o relatório individual?',
         resposta:
-          'É a lista das reuniões em que você esteve presente, com organização, comissão, data e tempo de participação. No topo aparecem o total de reuniões e as horas registradas.',
+          'É a lista das reuniões em que você esteve presente, com organização, comissão, data e tempo de participação. No topo aparecem o total de reuniões, as horas registradas e as organizações e comissões de que você faz parte.',
       },
       {
         id: 'relatorio-filtrar',

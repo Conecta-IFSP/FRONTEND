@@ -29,7 +29,10 @@ function htmlDaAta(reuniao: Reuniao) {
     .join('');
   const nomes = ata.avaliacoes
     .filter((avaliacao) => avaliacao.decisao === 'APROVADA')
-    .map((avaliacao) => escapar(nomeDe(avaliacao.usuario_id)));
+    .map(
+      (avaliacao) =>
+        escapar(nomeDe(avaliacao.usuario_id)) + (avaliacao.automatica ? ' (pelo fim do prazo)' : ''),
+    );
   const quando = ata.aprovada_em ? ` em ${formatarDiaMesAno(ata.aprovada_em)}` : '';
   const assinatura = nomes.length ? `Aprovada por ${lista(nomes)}${quando}.` : '';
 

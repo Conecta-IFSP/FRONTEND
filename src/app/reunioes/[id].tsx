@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
@@ -43,7 +43,7 @@ import {
 
 type Aba = 'presenca' | 'votacoes' | 'pauta';
 
-type Pendente = { mensagem: string; acao: () => Promise<unknown> };
+type Pendente = { mensagem: string; acao: () => Promise<unknown>; rotulo?: string; perigo?: boolean };
 
 type Pessoa = Participante & { usuario_id: NonNullable<Participante['usuario_id']> };
 
@@ -110,8 +110,17 @@ export default function TelaReuniao() {
     return true;
   }
 
+  // A mensagem de sucesso some sozinha depois de alguns segundos; a de erro fica até a próxima ação.
+  useEffect(() => {
+    if (!sucesso) return;
+    const temporizador = setTimeout(() => definirSucesso(''), 4000);
+    return () => clearTimeout(temporizador);
+  }, [sucesso]);
+
+  // Puxar para atualizar limpa as duas mensagens.
   async function atualizar() {
     definirErro('');
+    definirSucesso('');
     await buscar();
   }
 
@@ -138,6 +147,10 @@ export default function TelaReuniao() {
   const restantes = pessoas.filter(
     (pessoa) => !pessoa.presenca || pessoa.presenca.situacao === 'RECUSADA',
   );
+  // Mesmas condições do PATCH /presencas/:usuarioId na API: reunião iniciada, não cancelada
+  // e ata ainda não enviada (sem ata ou em rascunho).
+  const presencasEditaveis =
+    dono && !cancelada && comecou && (!reuniao.ata || reuniao.ata.situacao === 'RASCUNHO');
 
   const nome = (pessoa: Pessoa) =>
     pessoa.usuario_id._id === usuario?._id ? `${pessoa.usuario_id.nome} (você)` : pessoa.usuario_id.nome;
@@ -198,6 +211,29 @@ export default function TelaReuniao() {
     void executar(`presenca-${pessoa.usuario_id._id}`, () =>
       api<Reuniao>(`${caminho}/presencas/${pessoa.usuario_id._id}`, 'PATCH', { situacao }),
     );
+  }
+
+  // Desmarcar quem já está confirmado pede confirmação e depois a biometria ou PIN do aparelho.
+  // A API grava a situação RECUSADA e mantém os horários; "Marcar presente" desfaz.
+  function desmarcarPresenca(pessoa: Pessoa) {
+    definirConfirmacao({
+      mensagem: `Desmarcar a presença de ${pessoa.usuario_id.nome}? A pessoa passa para os ausentes até ser marcada de novo.`,
+      rotulo: 'Desmarcar',
+      perigo: true,
+      acao: async () => {
+        definirConfirmacao(null);
+        if (!(await autenticarComDispositivo())) {
+          definirSucesso('');
+          definirErro('Não foi possível confirmar sua identidade.');
+          return;
+        }
+        await executar(
+          `presenca-${pessoa.usuario_id._id}`,
+          () => api<Reuniao>(`${caminho}/presencas/${pessoa.usuario_id._id}`, 'PATCH', { situacao: 'RECUSADA' }),
+          `Presença de ${pessoa.usuario_id.nome} desmarcada.`,
+        );
+      },
+    });
   }
 
   // Desistir depois de ter aceitado pede confirmação; recusar convite pendente, não.
@@ -577,7 +613,22 @@ export default function TelaReuniao() {
                           {detalhePresente(pessoa)}
                         </Text>
                       </View>
-                      <Ionicons name="checkmark" size={20} color={cores.sucesso} />
+                      {presencasEditaveis && pessoa.usuario_id._id !== usuario?._id ? (
+                        <Pressable
+                          onPress={() => desmarcarPresenca(pessoa)}
+                          disabled={salvando !== null}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Desmarcar presença de ${pessoa.usuario_id.nome}`}
+                          style={({ pressed }) => [
+                            styles.pilula,
+                            { backgroundColor: cores.erroSuave, opacity: pressed || salvando ? 0.6 : 1 },
+                          ]}
+                        >
+                          <Text style={[styles.textoPilula, { color: cores.erro }]}>Desmarcar presença</Text>
+                        </Pressable>
+                      ) : (
+                        <Ionicons name="checkmark" size={20} color={cores.sucesso} />
+                      )}
                     </View>
                   ))}
                 </View>
@@ -713,6 +764,8 @@ export default function TelaReuniao() {
 
       <Confirmacao
         mensagem={confirmacao?.mensagem}
+        rotuloConfirmar={confirmacao?.rotulo}
+        perigo={confirmacao?.perigo}
         carregando={salvando !== null}
         cancelar={() => definirConfirmacao(null)}
         confirmar={() => {

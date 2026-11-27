@@ -163,6 +163,7 @@ export type AvaliacaoAta = {
   trecho?: string;
   justificativa?: string;
   em: string;
+  automatica?: boolean;
 };
 
 export type Ata = {
@@ -196,17 +197,23 @@ export type Anexo = {
   enviado_em: string;
 };
 
+export type EscolhaVoto = number | 'BRANCO' | 'NULO';
+
 export type Votacao = {
   _id: string;
   titulo: string;
   descricao: string;
   opcoes: string[];
+  modo: 'ABERTA' | 'FECHADA';
   situacao: 'ABERTA' | 'ENCERRADA';
   aberta_em: string;
   encerrada_em: string | null;
   total_votos: number;
-  meu_voto: number | null;
+  meu_voto: EscolhaVoto | null;
   resultado: number[] | null;
+  brancos: number | null;
+  nulos: number | null;
+  votos_nominais: { usuario_id: string; nome: string; voto: EscolhaVoto }[] | null;
 };
 
 export type Reuniao = {
