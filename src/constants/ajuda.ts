@@ -76,8 +76,7 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
         resposta: [
           'Toque no seu avatar, no topo da tela.',
           'Em Conta, toque em Nome, E-mail ou Senha.',
-          'Confirme a biometria, se solicitada.',
-          'Siga as instruções da tela.',
+          'Confirme a biometria, se solicitada, e siga as instruções da tela.',
           'Depois de trocar a senha, entre de novo em todos os aparelhos.',
         ],
       },
