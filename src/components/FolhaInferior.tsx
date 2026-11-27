@@ -1,14 +1,13 @@
 import type { ReactNode } from 'react';
 import {
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Ionicons,
@@ -46,10 +45,14 @@ export function FolhaInferior({
       animationType="slide"
       onRequestClose={aoFechar}
     >
+      {/* KeyboardAvoidingView do react-native-keyboard-controller, e não o do React Native:
+          com o Android em tela cheia (edge-to-edge), o do React Native não acompanhava o
+          teclado dentro do Modal (a folha tremia ou ficava atrás do teclado). Esta biblioteca
+          observa o teclado na própria janela do Modal, no Android e no iOS. */}
       <KeyboardAvoidingView
         style={styles.tela}
         enabled={acompanharTeclado}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior="padding"
       >
         <Pressable
           accessibilityRole="button"

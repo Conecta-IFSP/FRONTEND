@@ -2,7 +2,6 @@ import { Platform } from 'react-native';
 import { isRunningInExpoGo } from 'expo';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { File, Paths } from 'expo-file-system';
 
 const A4 = { width: 595, height: 842 };
 
@@ -29,21 +28,9 @@ export async function entregarPdf(html: string, nome: string) {
     await Print.printAsync({ html, ...A4 });
     return;
   }
-  const gerado = new File((await Print.printToFileAsync({ html, ...A4 })).uri);
-  await Sharing.shareAsync(nomearPdf(gerado, nome), { mimeType: 'application/pdf', UTI: 'com.adobe.pdf', dialogTitle: nome });
-}
-
-/**
- * Dá um nome legível ao PDF gerado. No Android o move pode falhar com
- * "Missing 'READ' permission"; nesse caso usa o arquivo original (só muda o nome).
- */
-function nomearPdf(gerado: File, nome: string) {
-  try {
-    const arquivo = new File(Paths.cache, `${nome}.pdf`);
-    if (arquivo.exists) arquivo.delete();
-    gerado.move(arquivo);
-    return arquivo.uri;
-  } catch {
-    return gerado.uri;
-  }
+  if (!await Sharing.isAvailableAsync()) throw new Error('O compartilhamento de arquivos não está disponível neste aparelho.');
+  const { uri } = await Print.printToFileAsync({ html, ...A4 });
+  // Compartilha o URI original, como o relatório individual: mover o PDF gerado
+  // falhava no Android com "Missing 'READ' permission" (FileSystemFile.move).
+  await Sharing.shareAsync(uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf', dialogTitle: nome });
 }
