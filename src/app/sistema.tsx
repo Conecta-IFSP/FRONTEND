@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller';
 
 import { Botao } from '@/components/Botao';
 import { CampoTexto } from '@/components/CampoTexto';
@@ -9,7 +8,6 @@ import { Carregando } from '@/components/Carregando';
 import { Cartao } from '@/components/Cartao';
 import { Confirmacao } from '@/components/Confirmacao';
 import { FaixaAviso, type Aviso } from '@/components/FaixaAviso';
-import { FolhaInferior } from '@/components/FolhaInferior';
 import { TelaComCabecalho } from '@/components/TelaComCabecalho';
 import { ESPACO, TIPOGRAFIA } from '@/constants/theme';
 import { useTema } from '@/contexts/TemaContext';
@@ -125,7 +123,6 @@ export default function TelaSistema() {
   const [relatorios, definirRelatorios] = useState<Relatorios | null>(null);
   const [carregando, definirCarregando] = useState(true);
   const [aviso, definirAviso] = useState<Aviso | null>(null);
-  const rolagem = useRef<KeyboardAwareScrollViewRef>(null);
 
   const [acaoEmAndamento, definirAcaoEmAndamento] = useState<string | null>(null);
   const [confirmacaoTeste, definirConfirmacaoTeste] = useState(false);
@@ -159,10 +156,6 @@ export default function TelaSistema() {
     definirStatus(resultadoStatus.dados);
     definirRelatorios(resultadoRelatorios.dados);
   }, []);
-
-  useEffect(() => {
-    if (aviso) rolagem.current?.scrollTo({ y: 0, animated: true });
-  }, [aviso]);
 
   useFocusEffect(
     useCallback(() => {
@@ -209,7 +202,7 @@ export default function TelaSistema() {
   const { versao: versaoApp } = versaoDoApp();
 
   return (
-    <TelaComCabecalho titulo="Sistema" aoAtualizar={carregar} refRolagem={rolagem}>
+    <TelaComCabecalho titulo="Sistema" aoAtualizar={carregar}>
       {aviso ? <FaixaAviso aviso={aviso} /> : null}
 
       {carregando ? (
@@ -413,6 +406,4 @@ const styles = StyleSheet.create({
   aviso: { ...TIPOGRAFIA.corpoPequeno },
   rotulo: { ...TIPOGRAFIA.corpoPequeno, fontSize: 12 },
   valor: { ...TIPOGRAFIA.subtitulo, fontSize: 15 },
-  aviso: { ...TIPOGRAFIA.corpo },
-  formulario: { paddingHorizontal: ESPACO.md, paddingBottom: ESPACO.sm, gap: ESPACO.md },
 });
