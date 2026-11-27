@@ -106,7 +106,7 @@ export function VotacoesReuniao({ reuniao, presidente, emAndamento, motivoSemVot
       opcoes: opcoes.map((opcao) => opcao.trim()),
       modo,
     };
-    const certo = await executar('abrir-votacao', () => api<Reuniao>(caminho, 'POST', corpo), 'Votação aberta.');
+    const certo = await executar('abrir-votacao', () => api<Reuniao>(caminho, 'POST', corpo), 'Votação iniciada.');
     if (certo) definirFormulario(false);
   }
 
@@ -314,7 +314,7 @@ export function VotacoesReuniao({ reuniao, presidente, emAndamento, motivoSemVot
                 <Text style={[styles.descricao, { color: cores.textoSuave }]}>{votacao.descricao}</Text>
               ) : null}
               <Text style={[styles.detalhe, { color: cores.textoSutil }]}>
-                {plural(votacao.total_votos, 'voto', 'votos')} · aberta às {formatarHora(votacao.aberta_em)}
+                {plural(votacao.total_votos, 'voto', 'votos')} · iniciada às {formatarHora(votacao.aberta_em)}
                 {votacao.encerrada_em ? ` · encerrada às ${formatarHora(votacao.encerrada_em)}` : ''}
               </Text>
               <View style={styles.linhaModo}>
