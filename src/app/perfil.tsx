@@ -126,6 +126,10 @@ export default function TelaPerfil() {
 
   const salvarNome = handleSubmit(async ({ nome: novoNome }) => {
     definirAvisoNome(null);
+    if (!(await autenticarComDispositivo().catch(() => false))) {
+      definirAvisoNome({ tom: 'erro', mensagem: 'Não foi possível confirmar sua identidade.' });
+      return;
+    }
     const resultado = await api<Perfil>('/usuarios/me', 'PATCH', { nome: novoNome.trim() });
     if (!resultado.ok) {
       definirAvisoNome({ tom: 'erro', titulo: 'Não foi possível salvar', mensagem: resultado.erro });
