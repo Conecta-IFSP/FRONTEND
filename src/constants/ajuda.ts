@@ -327,7 +327,7 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
         perfil: 'todos',
         pergunta: 'O que é o prazo da ata?',
         resposta:
-          'Ao enviar, o Responsável escolhe 24 horas, 3 dias ou 7 dias. A data aparece na ata como "Responder até". Depois dela, a ata continua esperando quem ainda não respondeu.',
+          'Ao enviar, o Responsável escolhe 24 horas, 3 dias ou 7 dias. A data aparece na ata como "Responder até". Quem não responder até lá aprova automaticamente; se ninguém reprovou, a ata fica aprovada e recebe o número.',
       },
       {
         id: 'ata-aprovada',

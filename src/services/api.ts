@@ -163,6 +163,7 @@ export type AvaliacaoAta = {
   trecho?: string;
   justificativa?: string;
   em: string;
+  automatica?: boolean;
 };
 
 export type Ata = {

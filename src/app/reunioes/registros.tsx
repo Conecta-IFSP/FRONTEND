@@ -261,6 +261,7 @@ export default function TelaRegistrosReuniao() {
   }
 
   const ata = reuniao?.ata;
+  const prazoVencido = Boolean(ata?.prazo && new Date(ata.prazo).getTime() <= agora);
   const canceladas = reuniao?.atas_canceladas ?? [];
   const anterior = canceladas.at(-1);
   const versaoVista = versaoAberta === null ? undefined : canceladas[versaoAberta];
@@ -272,7 +273,11 @@ export default function TelaRegistrosReuniao() {
   const editavel = responsavel && encerrada && (!ata || ata.situacao === 'RASCUNHO');
   const minhaAvaliacao = ata?.avaliacoes.find((avaliacao) => avaliacao.usuario_id === usuario?._id);
   const aprovador = Boolean(
-    usuario && ata?.situacao === 'EM_APROVACAO' && ata.aprovadores.includes(usuario._id) && !minhaAvaliacao,
+    usuario &&
+      ata?.situacao === 'EM_APROVACAO' &&
+      ata.aprovadores.includes(usuario._id) &&
+      !minhaAvaliacao &&
+      !prazoVencido,
   );
   const presentes = (reuniao?.participantes ?? []).filter((participante) => participante.presenca?.situacao === 'CONFIRMADA');
   const euPresente = presentes.some((participante) => participante.usuario_id?._id === usuario?._id);
@@ -284,7 +289,6 @@ export default function TelaRegistrosReuniao() {
     reuniao?.participantes.find((participante) => participante.usuario_id?._id === pessoaId)?.usuario_id?.nome ??
     'Participante';
   const totalPresentes = lista?.participantes.filter((participante) => participante.situacao === 'CONFIRMADA').length ?? 0;
-  const prazoVencido = Boolean(ata?.prazo && new Date(ata.prazo).getTime() < agora);
 
   function detalheDaVersao(atual: Ata) {
     if (atual.situacao === 'RASCUNHO') return `Versão ${versaoAtual} · salva em ${formatarDataHora(atual.atualizada_em)}`;
@@ -480,10 +484,10 @@ export default function TelaRegistrosReuniao() {
               {ata?.situacao === 'EM_APROVACAO' && ata.prazo ? (
                 <View style={styles.linhaIcone}>
                   <Ionicons name="time-outline" size={16} color={prazoVencido ? cores.erro : cores.textoSuave} />
-                  <Text style={[styles.detalhe, { color: prazoVencido ? cores.erro : cores.textoSuave }]}>
+                  <Text style={[styles.detalhe, { color: prazoVencido ? cores.erro : cores.textoSuave, flex: 1 }]}>
                     {prazoVencido
-                      ? `Prazo encerrado em ${formatarDataHora(ata.prazo)}`
-                      : `Responder até ${formatarDataHora(ata.prazo)}`}
+                      ? `Prazo encerrado em ${formatarDataHora(ata.prazo)}. A ata será aprovada automaticamente.`
+                      : `Responder até ${formatarDataHora(ata.prazo)}. Sem resposta, a aprovação é automática.`}
                   </Text>
                 </View>
               ) : null}
@@ -551,7 +555,9 @@ export default function TelaRegistrosReuniao() {
                     {ata.aprovadores.map((pessoaId, indice) => {
                       const avaliacao = ata.avaliacoes.find((item) => item.usuario_id === pessoaId);
                       const aprovou = avaliacao?.decisao === 'APROVADA';
-                      const detalhe = avaliacao
+                      const detalhe = avaliacao?.automatica
+                        ? `Aprovada pelo fim do prazo em ${formatarDataHora(avaliacao.em)}`
+                        : avaliacao
                         ? `${aprovou ? 'Aprovou' : 'Reprovou'} em ${formatarDataHora(avaliacao.em)}`
                         : ata.situacao === 'EM_APROVACAO'
                           ? 'Aguardando'
@@ -683,8 +689,8 @@ export default function TelaRegistrosReuniao() {
             ))}
           </View>
           <Text style={[styles.detalhe, { color: cores.textoSuave }]}>
-            Até {formatarDataHora(new Date(envioAbertoEm + prazo * HORA))}. Depois do envio o texto não muda; se alguém
-            reprovar, você corrige numa nova versão.
+            Até {formatarDataHora(new Date(envioAbertoEm + prazo * HORA))}. Quem não responder até lá aprova
+            automaticamente. Depois do envio o texto não muda; se alguém reprovar, você corrige numa nova versão.
           </Text>
           {euPresente ? (
             <View style={styles.linhaIcone}>
