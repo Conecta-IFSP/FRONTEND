@@ -418,7 +418,7 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
         perfil: 'todos',
         pergunta: 'O que é o relatório individual?',
         resposta:
-          'É a lista das reuniões em que você esteve presente, com organização, comissão, data e tempo de participação. No topo aparecem o total de reuniões e as horas registradas.',
+          'É a lista das reuniões em que você esteve presente, com organização, comissão, data e tempo de participação. No topo aparecem o total de reuniões, as horas registradas e as organizações e comissões de que você faz parte.',
       },
       {
         id: 'relatorio-filtrar',
