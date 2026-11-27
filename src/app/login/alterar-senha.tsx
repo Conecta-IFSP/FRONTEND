@@ -8,7 +8,7 @@ import { FaixaAviso } from '@/components/FaixaAviso';
 import { TelaComCabecalho } from '@/components/TelaComCabecalho';
 import { useSessao } from '@/contexts/SessaoContext';
 import { api } from '@/services/api';
-import { validarConfirmacaoSenha, validarSenha } from '@/utils/validacao';
+import { REGRA_SENHA, validarConfirmacaoSenha, validarNovaSenha, validarSenha } from '@/utils/validacao';
 
 type DadosSenha = { atual: string; nova: string; confirmacao: string };
 
@@ -93,7 +93,8 @@ export default function TelaAlterarSenha() {
       <CampoTextoControlado
         controle={control}
         nome="nova"
-        validar={validarSenha}
+        validar={validarNovaSenha}
+        ajuda={REGRA_SENHA}
         rotulo="Nova senha"
         placeholder="Nova senha"
         icone="key-outline"

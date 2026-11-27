@@ -25,6 +25,7 @@ type CampoTextoProps = TextInputProps & {
     aoTocar: () => void;
   };
   dica?: string;
+  ajuda?: string;
   compacto?: boolean;
 };
 
@@ -39,6 +40,7 @@ export const CampoTexto = forwardRef<TextInputInstance, CampoTextoProps>(functio
     erro = null,
     acaoFinal,
     dica,
+    ajuda,
     compacto = false,
     multiline = false,
     placeholder,
@@ -140,7 +142,7 @@ export const CampoTexto = forwardRef<TextInputInstance, CampoTextoProps>(functio
         ) : null}
       </View>
 
-      {invalido || dica ? (
+      {invalido || dica || ajuda ? (
         <View style={styles.rodape}>
           <View style={styles.erro}>
             {invalido ? (
@@ -148,6 +150,8 @@ export const CampoTexto = forwardRef<TextInputInstance, CampoTextoProps>(functio
                 <Ionicons name="alert-circle" size={14} color={cores.erro} />
                 <Text style={[styles.textoErro, { color: cores.erro }]}>{erro}</Text>
               </>
+            ) : ajuda ? (
+              <Text style={[styles.textoErro, { color: cores.textoSutil }]}>{ajuda}</Text>
             ) : null}
           </View>
           {dica ? <Text style={[styles.dica, { color: cores.textoSutil }]}>{dica}</Text> : null}

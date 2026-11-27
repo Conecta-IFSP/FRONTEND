@@ -1,6 +1,8 @@
 const EXPRESSAO_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export const TAMANHO_MINIMO_SENHA = 8;
+export const REGRA_SENHA = 'Mínimo de 8 caracteres, com letra maiúscula, minúscula, número e símbolo.';
+const SENHA_FORTE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d])/;
 export const TAMANHO_MAXIMO_DESCRICAO = 200;
 
 export function normalizarEmail(email: string) {
@@ -27,6 +29,10 @@ export function validarSenha(senha: string) {
     return `A senha deve ter ao menos ${TAMANHO_MINIMO_SENHA} caracteres.`;
   }
   return null;
+}
+
+export function validarNovaSenha(senha: string) {
+  return validarSenha(senha) ?? (SENHA_FORTE.test(senha) ? null : 'Use letra maiúscula, letra minúscula, número e símbolo na senha.');
 }
 
 export function validarConfirmacaoSenha(senha: string, confirmacao: string) {
