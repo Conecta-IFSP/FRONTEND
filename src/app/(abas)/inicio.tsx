@@ -18,6 +18,7 @@ import { ESPACO, FONTES, MARCA, RAIO, TEMAS, TIPOGRAFIA } from '@/constants/them
 import { useTema } from '@/contexts/TemaContext';
 import { useSessao } from '@/contexts/SessaoContext';
 import { api, type AtaPendente, type Organizacao, type Reuniao } from '@/services/api';
+import { autenticarComDispositivo } from '@/services/autenticacao-local';
 import {
   diaDaSemana,
   entradaAberta,
@@ -148,8 +149,12 @@ export default function TelaInicio() {
   }
 
   async function marcarEntrada(reuniao: Reuniao) {
-    definirOcupado(reuniao._id);
     definirAviso(null);
+    if (!(await autenticarComDispositivo().catch(() => false))) {
+      definirAviso({ tom: 'erro', mensagem: 'Não foi possível confirmar sua identidade.' });
+      return;
+    }
+    definirOcupado(reuniao._id);
     const resultado = await api<Reuniao>(`/reunioes/${reuniao._id}/entrada`, 'POST');
     definirOcupado(null);
     if (!resultado.ok) {
