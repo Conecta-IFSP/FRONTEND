@@ -267,12 +267,12 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
       {
         id: 'reunioes-lista-presenca',
         perfil: 'todos',
-        pergunta: 'Como compartilho a lista de presença?',
+        pergunta: 'Como gero a lista de presença em PDF?',
         resposta: [
           'Após o término, abra a reunião.',
           'Toque no cartão Ata.',
           'Abra a aba Presença.',
-          'Toque em Compartilhar.',
+          'Toque em PDF da lista e escolha onde salvar ou com quem compartilhar.',
         ],
       },
     ],
