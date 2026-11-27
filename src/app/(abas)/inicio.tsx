@@ -266,7 +266,7 @@ export default function TelaInicio() {
             />
             <ItemMenu
               titulo="Sistema"
-              descricao="Status, relatórios, reinício de subsistemas e reset."
+              descricao="Informações do sistema, status, relatórios e reset."
               icone="hardware-chip-outline"
               aoTocar={() => router.push('/sistema')}
             />
