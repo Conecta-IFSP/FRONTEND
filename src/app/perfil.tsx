@@ -267,7 +267,7 @@ export default function TelaPerfil() {
         <LinhaLista
           icone="help-circle-outline"
           titulo="Ajuda"
-          subtitulo="Perguntas frequentes"
+          subtitulo="Manual de utilização"
           aoTocar={() => router.push('/ajuda')}
         />
         <LinhaLista

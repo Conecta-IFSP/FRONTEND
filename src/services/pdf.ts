@@ -30,8 +30,20 @@ export async function entregarPdf(html: string, nome: string) {
     return;
   }
   const gerado = new File((await Print.printToFileAsync({ html, ...A4 })).uri);
-  const arquivo = new File(Paths.cache, `${nome}.pdf`);
-  if (arquivo.exists) arquivo.delete();
-  await gerado.move(arquivo);
-  await Sharing.shareAsync(arquivo.uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf', dialogTitle: nome });
+  await Sharing.shareAsync(nomearPdf(gerado, nome), { mimeType: 'application/pdf', UTI: 'com.adobe.pdf', dialogTitle: nome });
+}
+
+/**
+ * Dá um nome legível ao PDF gerado. No Android o move pode falhar com
+ * "Missing 'READ' permission"; nesse caso usa o arquivo original (só muda o nome).
+ */
+function nomearPdf(gerado: File, nome: string) {
+  try {
+    const arquivo = new File(Paths.cache, `${nome}.pdf`);
+    if (arquivo.exists) arquivo.delete();
+    gerado.move(arquivo);
+    return arquivo.uri;
+  } catch {
+    return gerado.uri;
+  }
 }
