@@ -1,16 +1,22 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
+import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller';
 
 import { Botao } from '@/components/Botao';
+import { CampoTexto } from '@/components/CampoTexto';
 import { Carregando } from '@/components/Carregando';
 import { Cartao } from '@/components/Cartao';
 import { Confirmacao } from '@/components/Confirmacao';
 import { FaixaAviso, type Aviso } from '@/components/FaixaAviso';
+import { FolhaInferior } from '@/components/FolhaInferior';
 import { TelaComCabecalho } from '@/components/TelaComCabecalho';
 import { ESPACO, TIPOGRAFIA } from '@/constants/theme';
 import { useTema } from '@/contexts/TemaContext';
 import { api } from '@/services/api';
+import { autenticarComDispositivo } from '@/services/autenticacao-local';
+
+const CONFIRMACAO_RESET = 'RESETAR';
 
 type Status = {
   servidor: {
@@ -75,9 +81,11 @@ export default function TelaSistema() {
   const [relatorios, definirRelatorios] = useState<Relatorios | null>(null);
   const [carregando, definirCarregando] = useState(true);
   const [aviso, definirAviso] = useState<Aviso | null>(null);
+  const rolagem = useRef<KeyboardAwareScrollViewRef>(null);
 
   const [acaoEmAndamento, definirAcaoEmAndamento] = useState<string | null>(null);
   const [confirmacaoReset, definirConfirmacaoReset] = useState(false);
+  const [textoReset, definirTextoReset] = useState('');
   const [confirmacaoTeste, definirConfirmacaoTeste] = useState(false);
 
   const carregar = useCallback(async () => {
@@ -101,6 +109,10 @@ export default function TelaSistema() {
     definirRelatorios(resultadoRelatorios.dados);
   }, []);
 
+  useEffect(() => {
+    if (aviso) rolagem.current?.scrollTo({ y: 0, animated: true });
+  }, [aviso]);
+
   useFocusEffect(
     useCallback(() => {
       void carregar();
@@ -109,38 +121,53 @@ export default function TelaSistema() {
 
   async function popularDadosDeTeste() {
     definirAcaoEmAndamento('popular-teste');
-    const resultado = await api<{ senha_padrao: string }>('/sistema/popular-teste', 'POST');
+    const resultado = await api('/sistema/popular-teste', 'POST');
     definirAcaoEmAndamento(null);
     definirConfirmacaoTeste(false);
 
+    if (resultado.ok) await carregar();
+    definirAviso(
+      resultado.ok
+        ? { tom: 'sucesso', titulo: 'Dados de teste criados', mensagem: '3 usuários de teste criados.' }
+        : { tom: 'erro', titulo: 'Não foi possível criar os dados de teste', mensagem: resultado.erro },
+    );
+  }
+
+  function abrirReset() {
+    definirTextoReset('');
+    definirConfirmacaoReset(true);
+  }
+
+  function fecharReset() {
+    if (acaoEmAndamento === 'reset') return;
+    definirConfirmacaoReset(false);
+  }
+
+  async function resetarSistema() {
+    if (textoReset !== CONFIRMACAO_RESET) return;
+    definirConfirmacaoReset(false);
+    if (!(await autenticarComDispositivo().catch(() => false))) {
+      definirAviso({ tom: 'erro', mensagem: 'Não foi possível confirmar sua identidade.' });
+      return;
+    }
+    definirAcaoEmAndamento('reset');
+    const resultado = await api('/sistema/reset', 'POST', { confirmacao: textoReset });
+    definirAcaoEmAndamento(null);
+
+    if (resultado.ok) await carregar();
     definirAviso(
       resultado.ok
         ? {
             tom: 'sucesso',
-            titulo: 'Dados de teste criados',
-            mensagem: `3 usuários de teste criados. Senha padrão: ${resultado.dados.senha_padrao}`,
+            titulo: 'Sistema resetado',
+            mensagem: 'Usuários, organizações, comissões, reuniões e notificações apagados.',
           }
-        : { tom: 'erro', titulo: 'Não foi possível criar os dados de teste', mensagem: resultado.erro },
-    );
-    if (resultado.ok) void carregar();
-  }
-
-  async function resetarSistema() {
-    definirAcaoEmAndamento('reset');
-    const resultado = await api('/sistema/reset', 'POST');
-    definirAcaoEmAndamento(null);
-    definirConfirmacaoReset(false);
-
-    definirAviso(
-      resultado.ok
-        ? { tom: 'sucesso', titulo: 'Sistema resetado', mensagem: 'Usuários, organizações e comissões apagados.' }
         : { tom: 'erro', titulo: 'Não foi possível resetar', mensagem: resultado.erro },
     );
-    if (resultado.ok) void carregar();
   }
 
   return (
-    <TelaComCabecalho titulo="Sistema" aoAtualizar={carregar}>
+    <TelaComCabecalho titulo="Sistema" aoAtualizar={carregar} refRolagem={rolagem}>
       {aviso ? <FaixaAviso aviso={aviso} /> : null}
 
       {carregando ? (
@@ -204,7 +231,8 @@ export default function TelaSistema() {
             titulo="Resetar sistema"
             variante="perigo"
             icone="trash-outline"
-            aoTocar={() => definirConfirmacaoReset(true)}
+            carregando={acaoEmAndamento === 'reset'}
+            aoTocar={abrirReset}
           />
         </>
       )}
@@ -220,16 +248,30 @@ export default function TelaSistema() {
         carregando={acaoEmAndamento === 'popular-teste'}
       />
 
-      <Confirmacao
-        mensagem={
-          confirmacaoReset
-            ? 'Apagar todos os usuários, organizações e comissões? O administrador do sistema será mantido.'
-            : undefined
-        }
-        confirmar={resetarSistema}
-        cancelar={() => definirConfirmacaoReset(false)}
-        carregando={acaoEmAndamento === 'reset'}
-      />
+      <FolhaInferior visivel={confirmacaoReset} titulo="Resetar sistema" aoFechar={fecharReset} acompanharTeclado>
+        <View style={styles.formulario}>
+          <Text style={[styles.aviso, { color: cores.texto }]}>
+            Apaga todos os usuários, exceto os administradores do sistema, e todas as organizações, comissões, reuniões,
+            atas, anexos e notificações. Não pode ser desfeito.
+          </Text>
+          <CampoTexto
+            rotulo={`Digite ${CONFIRMACAO_RESET} para confirmar`}
+            value={textoReset}
+            onChangeText={definirTextoReset}
+            autoCapitalize="characters"
+            autoCorrect={false}
+            compacto
+          />
+          <Botao
+            titulo="Resetar sistema"
+            variante="perigo"
+            icone="trash-outline"
+            pilula
+            desabilitado={textoReset !== CONFIRMACAO_RESET}
+            aoTocar={() => void resetarSistema()}
+          />
+        </View>
+      </FolhaInferior>
     </TelaComCabecalho>
   );
 }
@@ -244,4 +286,6 @@ const styles = StyleSheet.create({
   itensColuna: { gap: ESPACO.sm },
   rotulo: { ...TIPOGRAFIA.corpoPequeno, fontSize: 12 },
   valor: { ...TIPOGRAFIA.subtitulo, fontSize: 15 },
+  aviso: { ...TIPOGRAFIA.corpo },
+  formulario: { paddingHorizontal: ESPACO.md, paddingBottom: ESPACO.sm, gap: ESPACO.md },
 });
