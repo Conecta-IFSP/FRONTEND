@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Platform, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { Botao } from '@/components/Botao';
@@ -92,7 +92,7 @@ export default function TelaRelatorioIndividual() {
             <Botao titulo="Exportar PDF" icone="document-text-outline" carregando={exportando === 'pdf'} desabilitado={Boolean(exportando)} aoTocar={() => void exportar('pdf')} />
             <Botao titulo="Exportar CSV" icone="download-outline" variante="secundario" carregando={exportando === 'csv'} desabilitado={Boolean(exportando)} aoTocar={() => void exportar('csv')} />
           </View>
-          {pdfPelaImpressao() && <Text style={[styles.legenda, { color: cores.textoSuave }]}>Para PDF, escolha “Salvar como PDF” na janela de impressão.</Text>}
+          {Platform.OS === 'web' ? <Text style={[styles.legenda, { color: cores.textoSuave }]}>O PDF é baixado diretamente no navegador.</Text> : pdfPelaImpressao() && <Text style={[styles.legenda, { color: cores.textoSuave }]}>Para PDF, escolha “Salvar como PDF” na janela de impressão.</Text>}
           <Text style={[styles.legenda, { color: cores.textoSuave }]}>Atualizado em {dataRelatorio(relatorio.gerada_em)}. Reuniões canceladas e presenças pendentes ou recusadas não entram no relatório.</Text>
         </>}
       </View>}

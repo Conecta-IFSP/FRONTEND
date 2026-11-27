@@ -1,4 +1,16 @@
-# Verificação do relatório individual - 26/11/2026
+# Verificação do relatório individual
+
+## Correção da exportação web — 27/11/2026
+
+No navegador integrado, o botão permanecia carregando sem apresentar o PDF. A versão web agora gera o arquivo com jsPDF 4.2.1 e inicia seu download diretamente, sem chamar `window.open` ou `window.print`. O documento A4 incorpora logo e fontes Poppins, mantém texto selecionável, apresenta vínculos e participações e pagina o histórico. Reuniões que cabem em uma página são mantidas juntas. O fluxo nativo de Expo Print/Sharing e a exportação CSV foram preservados.
+
+Validação realizada: `npm run typecheck`, `npm run lint` e os 51 testes de `node --test tests/*.test.cjs` aprovados. Os quatro testes novos geram PDFs reais com os recursos do app e cobrem histórico extenso, dados literais, ausência de reuniões e compatibilidade com respostas anteriores. Foram também aprovados os 21 cenários de `relatorio-browser.e2e.cjs`, com respostas fictícias interceptadas em contexto de navegador isolado. O teste de PDF agora aguarda o download real, confere nome e assinatura do arquivo e falha se a aplicação chamar a impressão ou abrir um popup. A repetição do download com popup bloqueado também passou.
+
+Um download adicional foi realizado no navegador integrado, utilizando a API e o banco locais de demonstração. O arquivo foi salvo em Downloads e renderizado para conferência visual. Não foram realizados testes em aparelho Android/iOS nesta correção.
+
+Os itens 9 e 17 do registro abaixo descrevem a execução anterior, de 26/11. Foram substituídos na suíte atual pelo download direto e pelo novo download com popup bloqueado. `RELATORIO_API_URL` permite definir a origem da API a interceptar, cujo padrão continua sendo `http://127.0.0.1:39099`. Nenhuma requisição dessa origem é enviada ao backend durante a suíte de interface.
+
+## Registro da verificação de 26/11/2026
 
 Integração com a homolog frontend 56f4141 e backend 187f0bf. Alterações limitadas ao relatório e seus testes. Dados de testes fictícios; nenhum teste escreve em produção.
 
