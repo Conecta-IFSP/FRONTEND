@@ -6,6 +6,7 @@ import { isRunningInExpoGo } from 'expo';
 import * as Print from 'expo-print';
 import type { RelatorioIndividual } from '@/types/relatorio-individual';
 import { csvRelatorioIndividual, htmlRelatorioIndividual } from '@/utils/relatorio-individual';
+import { baixarPdfRelatorio } from './baixar-pdf-relatorio';
 
 async function logoDoRelatorio() {
   const logo = Asset.fromModule(require('../../assets/images/logo-titulo.png'));
@@ -28,30 +29,10 @@ async function logoDoRelatorio() {
   });
 }
 
-async function imprimirRelatorioWeb(relatorio: RelatorioIndividual) {
-  // Expo Print na web chama window.print() e ignora o HTML recebido.
-  // A janela é aberta durante o clique para evitar bloqueio de pop-up.
-  const janela = window.open('', '_blank');
-  if (!janela) throw new Error('Permita abrir uma nova janela para exportar o PDF.');
-  try {
-    const html = htmlRelatorioIndividual(relatorio, await logoDoRelatorio());
-    janela.document.open();
-    janela.document.write(html);
-    janela.document.close();
-    await Promise.all(Array.from(janela.document.images).map(imagem => imagem.decode()));
-    await janela.document.fonts.ready;
-    janela.focus();
-    janela.print();
-  } catch (erro) {
-    janela.close();
-    throw erro;
-  }
-}
-
 export async function exportarRelatorioIndividual(relatorio: RelatorioIndividual, formato: 'pdf' | 'csv') {
   if (Platform.OS === 'web') {
     if (formato === 'pdf') {
-      await imprimirRelatorioWeb(relatorio);
+      await baixarPdfRelatorio(relatorio, await logoDoRelatorio());
     } else {
       const url = URL.createObjectURL(new Blob([csvRelatorioIndividual(relatorio)], { type: 'text/csv;charset=utf-8' }));
       const link = document.createElement('a');

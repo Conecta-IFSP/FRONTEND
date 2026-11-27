@@ -21,6 +21,7 @@ function preparar({ escrever, imprimir, compartilhar, plataforma = 'android', ex
     'expo-asset': { Asset: { fromModule: () => ({ localUri: 'file:///logo.png', downloadAsync: async () => {} }) } },
     '@/utils/relatorio-individual': { csvRelatorioIndividual: () => 'csv', htmlRelatorioIndividual: () => '<html></html>' },
     '../../assets/images/logo-titulo.png': 1,
+    './baixar-pdf-relatorio': { baixarPdfRelatorio: async () => {} },
   };
   const fonte = fs.readFileSync(`${__dirname}/../src/services/exportar-relatorio-individual.ts`, 'utf8');
   vm.runInNewContext(ts.transpileModule(fonte, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText,

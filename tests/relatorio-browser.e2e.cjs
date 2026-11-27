@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const base = process.env.RELATORIO_URL || 'http://localhost:8091';
+const api = process.env.RELATORIO_API_URL || 'http://127.0.0.1:39099';
 const pasta = process.env.RELATORIO_QA_DIR || path.join(require('node:os').tmpdir(), 'conecta-relatorio-qa');
 fs.mkdirSync(pasta, { recursive: true });
 const usuario = { _id: '111111111111111111111111', nome: 'Rafaela teste', email: 'teste@example.invalid', tipo: 'USUARIO' };
@@ -21,8 +22,8 @@ async function verificar(nome, fn) { await fn(); evidencias.push({ nome, resulta
   const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH || 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', headless: true });
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, acceptDownloads: true });
   let resposta = structuredClone(modelo), modo = 'ok', contador = 0, pedidos = [];
-  await ctx.addInitScript(() => { localStorage.setItem('conecta_mais_token', 'token-ficticio'); if (!localStorage.getItem('conecta_mais_tema')) localStorage.setItem('conecta_mais_tema', 'claro'); window.print = () => { window.__imprimiu = true; }; });
-  await ctx.route('http://127.0.0.1:39099/**', async route => {
+  await ctx.addInitScript(() => { localStorage.setItem('conecta_mais_token', 'token-ficticio'); if (!localStorage.getItem('conecta_mais_tema')) localStorage.setItem('conecta_mais_tema', 'claro'); window.print = () => { throw new Error('O download não deve depender da impressão.'); }; window.open = () => { throw new Error('O download não deve depender de popup.'); }; });
+  await ctx.route(api+'/**', async route => {
     const u = new URL(route.request().url());
     if (u.pathname === '/usuarios/me') return route.fulfill({ json: usuario });
     if (u.pathname === '/notificacoes') return route.fulfill({ json: { nao_lidas: 0, itens: [] } });
@@ -66,13 +67,13 @@ async function verificar(nome, fn) { await fn(); evidencias.push({ nome, resulta
       const d = await evento; const arquivo = path.join(pasta,'relatorio.csv'); await d.saveAs(arquivo);
       const csv = fs.readFileSync(arquivo,'utf8'); assert.ok(csv.includes('Comissão atual')); assert.ok(csv.includes('Automática no término previsto')); assert.equal(csv.charCodeAt(0),0xfeff);
     });
-    await verificar('PDF web abre documento próprio com logo e vínculos', async () => {
-      const evento = ctx.waitForEvent('page'); await page.getByRole('button', { name: 'Exportar PDF', exact: true }).click(); const pdf = await evento;
-      await pdf.waitForFunction(() => window.__imprimiu === true); assert.equal(await pdf.title(),'Relatório Individual');
-      assert.ok(await pdf.getByText('Vínculos atuais', { exact: true }).count()); assert.equal(await pdf.locator('img.logo').count(),1);
-      const arquivo = await pdf.pdf({ path:path.join(pasta,'relatorio-a4.pdf'), format:'A4', preferCSSPageSize:true, printBackground:true });
-      assert.equal(arquivo.subarray(0,5).toString(),'%PDF-');
-      await pdf.screenshot({ path:path.join(pasta,'pdf-web.png'),fullPage:true }); await pdf.close();
+    await verificar('PDF web baixa arquivo real sem impressão ou nova janela', async () => {
+      const evento = page.waitForEvent('download'); await page.getByRole('button', { name: 'Exportar PDF', exact: true }).click(); const download = await evento;
+      assert.equal(download.suggestedFilename(),'relatorio-individual.pdf');
+      const destino = path.join(pasta,'relatorio-a4.pdf'); await download.saveAs(destino);
+      const arquivo = fs.readFileSync(destino);
+      assert.equal(arquivo.subarray(0,5).toString(),'%PDF-'); assert.ok(arquivo.length > 10000);
+      assert.ok(await page.getByRole('button',{name:'Exportar PDF',exact:true}).isEnabled());
     });
     await verificar('falha de rede permite tentar novamente', async () => {
       modo='offline'; await page.getByRole('button',{name:'Atualizar relatório',exact:true}).click();
@@ -106,10 +107,12 @@ async function verificar(nome, fn) { await fn(); evidencias.push({ nome, resulta
       await page.getByText('Consulta recente',{exact:true}).waitFor();
       await page.waitForTimeout(1000);assert.equal(await page.getByText('Consulta antiga',{exact:true}).count(),0);modo='ok';
     });
-    await verificar('popup bloqueado mostra orientação e libera o botão', async () => {
+    await verificar('PDF pode ser baixado novamente com popup bloqueado', async () => {
       await page.evaluate(()=>{window.__abrirOriginal=window.open;window.open=()=>null;});
+      const evento = page.waitForEvent('download');
       await page.getByRole('button',{name:'Exportar PDF',exact:true}).click();
-      await page.getByText('Permita abrir uma nova janela para exportar o PDF.',{exact:true}).waitFor();
+      const download = await evento; await download.saveAs(path.join(pasta,'pdf-sem-popup.pdf'));
+      assert.equal(await download.failure(),null);
       assert.ok(await page.getByRole('button',{name:'Exportar PDF',exact:true}).isEnabled());
       await page.evaluate(()=>{window.open=window.__abrirOriginal;});
     });
