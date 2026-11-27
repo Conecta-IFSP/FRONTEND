@@ -77,7 +77,7 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
           'Toque no seu avatar, no topo da tela.',
           'Em Conta, toque em Nome, E-mail ou Senha.',
           'Confirme a biometria, se solicitada.',
-          'Siga as instruções da tela.',
+          'Siga as instruções da tela. Depois de trocar a senha, entre de novo em todos os aparelhos.',
         ],
       },
       {
@@ -267,12 +267,12 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
       {
         id: 'reunioes-lista-presenca',
         perfil: 'todos',
-        pergunta: 'Como compartilho a lista de presença?',
+        pergunta: 'Como gero a lista de presença em PDF?',
         resposta: [
           'Após o término, abra a reunião.',
           'Toque no cartão Ata.',
           'Abra a aba Presença.',
-          'Toque em Compartilhar.',
+          'Toque em PDF da lista e escolha onde salvar ou com quem compartilhar.',
         ],
       },
     ],
@@ -327,7 +327,7 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
         perfil: 'todos',
         pergunta: 'O que é o prazo da ata?',
         resposta:
-          'Ao enviar, o Responsável escolhe 24 horas, 3 dias ou 7 dias. A data aparece na ata como "Responder até". Depois dela, a ata continua esperando quem ainda não respondeu.',
+          'Ao enviar, o Responsável escolhe 24 horas, 3 dias ou 7 dias. A data aparece na ata como "Responder até". Quem não responder até lá aprova automaticamente; se ninguém reprovou, a ata fica aprovada e recebe o número.',
       },
       {
         id: 'ata-aprovada',
@@ -418,7 +418,7 @@ export const TOPICOS_AJUDA: readonly TopicoAjuda[] = [
         perfil: 'todos',
         pergunta: 'O que é o relatório individual?',
         resposta:
-          'É a lista das reuniões em que você esteve presente, com organização, comissão, data e tempo de participação. No topo aparecem o total de reuniões e as horas registradas.',
+          'É a lista das reuniões em que você esteve presente, com organização, comissão, data e tempo de participação. No topo aparecem o total de reuniões, as horas registradas e as organizações e comissões de que você faz parte.',
       },
       {
         id: 'relatorio-filtrar',

@@ -53,7 +53,9 @@ export default function TelaRelatorioIndividual() {
   }
 
   return <SafeAreaView edges={['top']} style={[styles.tela, { backgroundColor: cores.fundo }]}>
-    <CabecalhoAba titulo="Relatório individual" />
+    <CabecalhoAba>
+      <Text accessibilityRole="header" style={[styles.titulo, { color: cores.texto }]}>Relatório individual</Text>
+    </CabecalhoAba>
     <FlatList
       data={relatorio?.reunioes ?? []}
       keyExtractor={item => item.reuniao_id}
@@ -68,14 +70,27 @@ export default function TelaRelatorioIndividual() {
         {relatorio && <>
           <Text style={[styles.titulo, { color: cores.texto }]}>{relatorio.usuario.nome}</Text>
           <Text style={[styles.corpo, { color: cores.textoSuave }]}>{periodoRelatorio(relatorio)} · pela data de início da reunião</Text>
+          <View style={[styles.resumo, { backgroundColor: cores.superficie }]}>
+            <Text style={[styles.titulo, { color: cores.texto }]}>Meus vínculos atuais</Text>
+            <Text style={[styles.legenda, { color: cores.textoSuave }]}>Organizações aprovadas e comissões ativas. Estes vínculos não mudam com o filtro de período.</Text>
+            {!relatorio.vinculos ? <Text style={[styles.corpo, { color: cores.textoSuave }]}>Informações de vínculos indisponíveis nesta versão do servidor.</Text> : <>
+              <Text style={[styles.titulo, { color: cores.texto }]}>Organizações</Text>
+              {relatorio.vinculos.organizacoes.map(o => <Text key={o.id} style={[styles.corpo, { color: cores.texto }]}>{o.nome} · {o.papel === 'ADMIN' ? 'Administrador' : 'Membro'}</Text>)}
+              {!relatorio.vinculos.organizacoes.length && <Text style={[styles.corpo, { color: cores.textoSuave }]}>Nenhum vínculo aprovado em organização aprovada.</Text>}
+              <Text style={[styles.titulo, { color: cores.texto }]}>Comissões</Text>
+              {relatorio.vinculos.comissoes.map(c => <Text key={c.id} style={[styles.corpo, { color: cores.texto }]}>{c.nome} · {c.organizacao} · {c.papel === 'RESPONSAVEL' ? 'Responsável' : 'Membro'}</Text>)}
+              {!relatorio.vinculos.comissoes.length && <Text style={[styles.corpo, { color: cores.textoSuave }]}>Nenhuma comissão ativa vinculada.</Text>}
+            </>}
+          </View>
           <View style={[styles.resumo, { backgroundColor: cores.primariaSuave }]}>
             <Text style={[styles.titulo, { color: cores.primaria }]}>{relatorio.resumo.reunioes} reunião(ões)</Text>
             <Text style={[styles.corpo, { color: cores.texto }]}>{horasRelatorio(relatorio.resumo.minutos_registrados)} de participação registrada</Text>
+            {relatorio.reunioes.some(r => r.saida_automatica) && <Text style={[styles.legenda, { color: cores.textoSuave }]}>O total inclui saídas registradas automaticamente no término previsto da reunião.</Text>}
             {relatorio.resumo.registros_sem_duracao > 0 && <Text style={[styles.corpo, { color: cores.textoSuave }]}>{relatorio.resumo.registros_sem_duracao} registro(s) sem duração calculada. É necessário ter entrada e saída válidas.</Text>}
           </View>
           <View style={styles.exportacoes}>
-            <Botao titulo="Exportar PDF" icone="document-text-outline" carregando={exportando === 'pdf'} desabilitado={Boolean(exportando) || !relatorio.reunioes.length} aoTocar={() => void exportar('pdf')} />
-            <Botao titulo="Exportar CSV" icone="download-outline" variante="secundario" carregando={exportando === 'csv'} desabilitado={Boolean(exportando) || !relatorio.reunioes.length} aoTocar={() => void exportar('csv')} />
+            <Botao titulo="Exportar PDF" icone="document-text-outline" carregando={exportando === 'pdf'} desabilitado={Boolean(exportando)} aoTocar={() => void exportar('pdf')} />
+            <Botao titulo="Exportar CSV" icone="download-outline" variante="secundario" carregando={exportando === 'csv'} desabilitado={Boolean(exportando)} aoTocar={() => void exportar('csv')} />
           </View>
           {pdfPelaImpressao() && <Text style={[styles.legenda, { color: cores.textoSuave }]}>Para PDF, escolha “Salvar como PDF” na janela de impressão.</Text>}
           <Text style={[styles.legenda, { color: cores.textoSuave }]}>Atualizado em {dataRelatorio(relatorio.gerada_em)}. Reuniões canceladas e presenças pendentes ou recusadas não entram no relatório.</Text>
@@ -90,6 +105,7 @@ export default function TelaRelatorioIndividual() {
         <Text style={[styles.corpo, { color: cores.textoSuave }]}>{item.local || 'Local não informado'}</Text>
         <Text style={[styles.corpo, { color: cores.texto }]}>Entrada: {dataRelatorio(item.entrada)}</Text>
         <Text style={[styles.corpo, { color: cores.texto }]}>Saída: {dataRelatorio(item.saida)}</Text>
+        {item.saida_automatica && <Text style={[styles.legenda, { color: cores.textoSuave }]}>Saída automática no término previsto.</Text>}
         <Text style={[styles.duracao, { color: cores.primaria }]}>{item.minutos === null ? 'Duração não calculada' : horasRelatorio(item.minutos)}</Text>
       </View>}
     />

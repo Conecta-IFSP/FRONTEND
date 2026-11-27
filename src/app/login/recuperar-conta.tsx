@@ -11,7 +11,7 @@ import { ESPACO, FONTES, TIPOGRAFIA } from '@/constants/theme';
 import { useTema } from '@/contexts/TemaContext';
 import { api } from '@/services/api';
 import { autenticarComDispositivo } from '@/services/autenticacao-local';
-import { normalizarEmail, validarConfirmacaoSenha, validarEmail, validarSenha } from '@/utils/validacao';
+import { REGRA_SENHA, normalizarEmail, validarConfirmacaoSenha, validarEmail, validarNovaSenha } from '@/utils/validacao';
 
 type Etapa = 'email' | 'codigo' | 'senha' | 'concluido';
 type EmailForm = { email: string };
@@ -160,7 +160,7 @@ export default function TelaRecuperarConta() {
       {etapa === 'senha' ? (
         <>
           <Text style={[styles.descricao, { color: tema.cores.textoSuave }]}>Crie uma nova senha para sua conta.</Text>
-          <CampoTextoControlado controle={controleSenha} nome="senha" validar={validarSenha} rotulo="Nova senha" placeholder="Nova senha" icone="lock-closed-outline" secureTextEntry={!visiveis.senha} autoCapitalize="none" editable={!carregando} acaoFinal={olho('senha')} returnKeyType="next" onSubmitEditing={() => focarSenha('confirmacao')} compacto />
+          <CampoTextoControlado controle={controleSenha} nome="senha" validar={validarNovaSenha} ajuda={REGRA_SENHA} rotulo="Nova senha" placeholder="Nova senha" icone="lock-closed-outline" secureTextEntry={!visiveis.senha} autoCapitalize="none" editable={!carregando} acaoFinal={olho('senha')} returnKeyType="next" onSubmitEditing={() => focarSenha('confirmacao')} compacto />
           <CampoTextoControlado controle={controleSenha} nome="confirmacao" validar={(valor, valores) => validarConfirmacaoSenha(valores.senha, valor)} rotulo="Confirmar nova senha" placeholder="Confirmar senha" icone="checkmark-circle-outline" secureTextEntry={!visiveis.confirmacao} autoCapitalize="none" editable={!carregando} acaoFinal={olho('confirmacao')} returnKeyType="go" onSubmitEditing={() => void redefinir()} compacto />
         </>
       ) : null}

@@ -2,7 +2,8 @@ import { Platform } from 'react-native';
 import * as Sharing from 'expo-sharing';
 import { File, Paths } from 'expo-file-system';
 import { Asset } from 'expo-asset';
-import { entregarPdf } from '@/services/pdf';
+import { isRunningInExpoGo } from 'expo';
+import * as Print from 'expo-print';
 import type { RelatorioIndividual } from '@/types/relatorio-individual';
 import { csvRelatorioIndividual, htmlRelatorioIndividual } from '@/utils/relatorio-individual';
 
@@ -64,20 +65,20 @@ export async function exportarRelatorioIndividual(relatorio: RelatorioIndividual
     return;
   }
   if (formato === 'pdf') {
-    return entregarPdf(htmlRelatorioIndividual(relatorio, await logoDoRelatorio()), 'Relatório individual');
+    const html = htmlRelatorioIndividual(relatorio, await logoDoRelatorio());
+    // Mantém o fluxo de impressão adotado pela equipe para o Expo Go.
+    if (isRunningInExpoGo()) return Print.printAsync({ html, width: 595, height: 842 });
+    if (!await Sharing.isAvailableAsync()) throw new Error('O compartilhamento de arquivos não está disponível neste aparelho.');
+    const { uri } = await Print.printToFileAsync({ html, width: 595, height: 842 });
+    // Compartilha o URI original: mover o PDF exigia acesso adicional no aparelho.
+    await Sharing.shareAsync(uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf', dialogTitle: 'Exportar relatório individual' });
+    return;
   }
   if (!await Sharing.isAvailableAsync()) throw new Error('O compartilhamento de arquivos não está disponível neste aparelho.');
   const arquivo = new File(Paths.cache, `relatorio-individual-${Date.now()}.csv`);
-  try {
-    arquivo.create();
-    arquivo.write(csvRelatorioIndividual(relatorio));
-    await Sharing.shareAsync(arquivo.uri, {
-      mimeType: 'text/csv',
-      UTI: 'public.comma-separated-values-text',
-      dialogTitle: 'Exportar relatório individual',
-    });
-  } catch (erro) {
-    if (arquivo.exists) arquivo.delete();
-    throw erro;
-  }
+  arquivo.create();
+  await arquivo.write(csvRelatorioIndividual(relatorio));
+  await Sharing.shareAsync(arquivo.uri, {
+    mimeType: 'text/csv', UTI: 'public.comma-separated-values-text', dialogTitle: 'Exportar relatório individual',
+  });
 }
